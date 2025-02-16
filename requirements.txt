@@ -1,2 +1,7 @@
-SpeechRecognition==3.10.0
-pydub==0.25.1 
+flask
+python-dotenv
+openai==0.28.0
+SpeechRecognition
+pydub
+httpx
+Werkzeug 
