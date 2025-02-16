@@ -1,0 +1,28 @@
+# 環境變數和敏感資訊
+.env
+*.env
+.env.*
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+ENV/
+
+# 上傳和日誌檔案
+uploads/
+logs/
+*.log
+
+# IDE 相關
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 系統檔案
+.DS_Store
+Thumbs.db 
