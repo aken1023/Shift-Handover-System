@@ -14,11 +14,14 @@ import json
 from dotenv import load_dotenv
 import openai
 
-# 載入環境變數
-load_dotenv()
+# 嘗試載入 .env 檔案（本地開發用），但不會在找不到檔案時報錯
+load_dotenv(override=True)
 
-# 設定 OpenAI API 金鑰
-openai.api_key = os.getenv('OPENAI_API_KEY')
+# 優先使用環境變數中的設定
+openai.api_key = os.environ.get('OPENAI_API_KEY')
+
+if not openai.api_key:
+    raise ValueError("未設定 OPENAI_API_KEY 環境變數")
 
 # 建立一個環形緩衝區來存儲最近的錯誤日誌
 error_logs = deque(maxlen=100)  # 保存最近100條日誌
@@ -346,6 +349,9 @@ def send_email():
     except Exception as e:
         log_error('EmailError', f"發送郵件時發生錯誤: {str(e)}", traceback.format_exc())
         return jsonify({'error': f"發送郵件時發生錯誤: {str(e)}"}), 500
+
+# 設定 Flask 環境
+app.config['ENV'] = os.environ.get('FLASK_ENV', 'production')
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
