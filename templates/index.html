@@ -3,276 +3,332 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>白頭翁整合照護</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <link href="{{ url_for('static', filename='style.css') }}" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <!-- 防止瀏覽器請求 favicon -->
-    <link rel="icon" href="data:,">
+    <title>白頭翁整合照護智慧照護記錄系統</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
-        .report-content {
-            font-family: "Microsoft JhengHei", "微軟正黑體", sans-serif;
-            line-height: 1.8;
+        :root {
+            --primary-color: #FF9F9F;
+            --secondary-color: #FFC0CB;
+            --text-color: #4A4A4A;
+            --background-color: #FFF5F5;
+            --card-background: #FFFFFF;
+            --shadow-color: rgba(255, 159, 159, 0.2);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
             padding: 20px;
         }
-        
-        .report-content h1 {
-            color: #2c3e50;
-            border-bottom: 2px solid #3498db;
-            padding-bottom: 10px;
-            margin-top: 30px;
-            margin-bottom: 20px;
-            font-size: 1.8em;
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 15px;
         }
-        
-        .report-content h2 {
-            color: #34495e;
-            margin-top: 25px;
-            margin-bottom: 15px;
-            font-size: 1.5em;
-        }
-        
-        .report-content p {
-            margin-bottom: 15px;
-            color: #2c3e50;
-        }
-        
-        .report-content ul {
-            margin-bottom: 20px;
-            padding-left: 20px;
-        }
-        
-        .report-content li {
-            margin-bottom: 10px;
-            color: #2c3e50;
-        }
-        
-        .report-content hr {
-            margin: 25px 0;
-            border: 0;
-            border-top: 1px solid #eee;
-        }
-        
-        .report-content blockquote {
-            border-left: 4px solid #3498db;
-            padding-left: 15px;
-            margin: 15px 0;
-            color: #7f8c8d;
-        }
-        
-        /* 添加提示訊息的樣式 */
-        .browser-suggestion {
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            bottom: 0;
-            background: rgba(255, 255, 255, 0.95);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-        
-        .browser-suggestion-content {
+
+        h1 {
+            color: var(--primary-color);
             text-align: center;
-            padding: 20px;
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin: 2rem 0;
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .card {
+            background: var(--card-background);
+            border-radius: 20px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: 0 8px 16px var(--shadow-color);
+            transition: transform 0.3s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+        }
+
+        .card h2 {
+            color: var(--primary-color);
+            margin-bottom: 1.5rem;
+            font-size: 1.5rem;
+            border-bottom: 2px solid var(--secondary-color);
+            padding-bottom: 0.5rem;
+        }
+
+        .tips {
+            background-color: rgba(255, 192, 203, 0.1);
+            padding: 1.5rem;
+            border-radius: 15px;
+            margin: 1.5rem 0;
+            border: 1px solid var(--secondary-color);
+        }
+
+        .tips h3 {
+            color: var(--primary-color);
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .tips ul {
+            list-style-type: none;
+        }
+
+        .tips li {
+            margin: 0.8rem 0;
+            padding-left: 1.5rem;
+            position: relative;
+        }
+
+        .tips li:before {
+            content: "♥";
+            color: var(--primary-color);
+            position: absolute;
+            left: 0;
+        }
+
+        #recordButton {
+            display: block;
+            width: 80%;
+            max-width: 300px;
+            padding: 1rem;
+            font-size: 1.2rem;
+            border: none;
+            border-radius: 50px;
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            cursor: pointer;
+            margin: 2rem auto;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px var(--shadow-color);
+        }
+
+        #recordButton:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 12px var(--shadow-color);
+        }
+
+        #recordButton:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        #recordButton.recording {
+            background: linear-gradient(45deg, #FF6B6B, #FF8E8E);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        .timer {
+            text-align: center;
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin: 1.5rem 0;
+            text-shadow: 2px 2px 4px var(--shadow-color);
+        }
+
+        #recordingStatus {
+            text-align: center;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 15px;
+            font-weight: 500;
+        }
+
+        .status.success { 
+            background-color: #E8F5E9;
+            color: #2E7D32;
+        }
+
+        .status.error { 
+            background-color: #FFEBEE;
+            color: #C62828;
+        }
+
+        .status.warning { 
+            background-color: #FFF8E1;
+            color: #F57F17;
+        }
+
+        #result {
+            margin-top: 1.5rem;
+            line-height: 1.8;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 3rem;
+            padding: 2rem 0;
+            color: var(--text-color);
+            font-size: 0.9rem;
+            border-top: 1px solid var(--secondary-color);
+        }
+
+        /* RWD 設計 */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            .card {
+                padding: 1.5rem;
+            }
+
+            .card h2 {
+                font-size: 1.3rem;
+            }
+
+            .tips h3 {
+                font-size: 1.1rem;
+            }
+
+            .timer {
+                font-size: 2rem;
+            }
+
+            #recordButton {
+                width: 90%;
+                font-size: 1.1rem;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .card {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 1.3rem;
+                margin: 1.5rem 0;
+            }
+
+            .tips {
+                padding: 1rem;
+            }
+
+            .timer {
+                font-size: 1.8rem;
+            }
+
+            #recordButton {
+                width: 95%;
+                font-size: 1rem;
+                padding: 0.8rem;
+            }
         }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="#">
-                <i class="fas fa-heartbeat me-2"></i>白頭翁整合照護
-                <small class="d-block d-lg-inline ms-lg-2 text-white-50">智慧照護記錄系統</small>
-            </a>
-            <div class="navbar-text text-white ms-auto">
-                <i class="fas fa-clock me-2"></i><span id="currentTime"></span>
-            </div>
-        </div>
-    </nav>
-
-    <div class="container mt-4">
-        <div class="row g-4">
-            <div class="col-lg-6">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title d-flex align-items-center">
-                            <i class="fas fa-microphone me-2"></i>語音記錄
-                            <div class="ms-auto">
-                                <small class="text-muted" style="font-size: 0.8rem;">
-                                    <i class="fas fa-info-circle me-1"></i>請說出照護紀錄
-                                </small>
-                            </div>
-                        </h5>
-                        <div class="handover-info mb-4">
-                            <div class="row">
-                                <div class="col-12">
-                                    <div class="form-group">
-                                        <label for="handoverFrom" class="form-label">
-                                            <i class="fas fa-user-nurse me-2"></i>交接護理人員
-                                        </label>
-                                        <input type="text" class="form-control" id="handoverFrom" 
-                                               placeholder="請輸入您的姓名">
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="recording-guide mb-4">
-                            <h6 class="guide-title">
-                                <i class="fas fa-clipboard-list me-2"></i>照護語音紀錄重點
-                            </h6>
-                            <ul class="guide-list">
-                                <li><i class="fas fa-check-circle text-success me-2"></i>說明病患基本狀況說明</li>
-                                <li><i class="fas fa-check-circle text-success me-2"></i>說明生命徵象數據記錄</li>
-                                <li><i class="fas fa-check-circle text-success me-2"></i>說明已執行照護項目</li>
-                                <li><i class="fas fa-check-circle text-success me-2"></i>說明特殊觀察重點提醒</li>
-                                <li><i class="fas fa-check-circle text-success me-2"></i>說明後續照護建議事項</li>
-                            </ul>
-                        </div>
-                        <div class="text-center my-4">
-                            <div class="record-button-container">
-                                <button id="recordButton" class="btn btn-lg btn-primary rounded-circle" style="width: 120px; height: 120px; padding: 30px;">
-                                    <i class="fas fa-microphone fa-4x"></i>
-                                </button>
-                                <div id="recordingStatus" class="mt-3">準備就緒</div>
-                                <div id="timer" class="mt-2 display-4 d-none">00:00</div>
-                            </div>
-                        </div>
-                        <div class="progress mb-3 d-none" id="progressBar">
-                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
-                                 role="progressbar" style="width: 0%"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
+    <div class="container">
+        <h1>白頭翁整合照護智慧照護記錄系統</h1>
+        
+        <div class="card">
+            <h2>語音照護記錄</h2>
             
-            <div class="col-lg-6">
-                <div class="card h-100">
-                    <div class="card-body">
-                        <h5 class="card-title">
-                            <i class="fas fa-file-medical me-2"></i>處理狀態
-                        </h5>
-                        <div id="processingStatus" class="alert alert-info d-none">
-                            <div class="d-flex align-items-center">
-                                <i class="fas fa-spinner fa-spin me-3"></i>
-                                <div>
-                                    <strong>正在處理中</strong>
-                                    <small class="d-block text-muted">請稍候，我們正在生成您的照護報告</small>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+            <div class="tips">
+                <h3>照護語音紀錄重點</h3>
+                <ul>
+                    <li>病患基本狀況說明</li>
+                    <li>生命徵象數據記錄</li>
+                    <li>已執行照護項目</li>
+                    <li>特殊觀察重點提醒</li>
+                    <li>後續照護建議事項</li>
+                </ul>
             </div>
+
+            <div id="recordingStatus" class="status">準備就緒</div>
+            <button id="recordButton" disabled>開始錄音</button>
+            <div class="timer" id="timer">00:00</div>
         </div>
 
-        <div class="row mt-4">
-            <div class="col-12">
-                <div class="card">
-                    <div class="card-body">
-                        <h5 class="card-title d-flex align-items-center">
-                            <i class="fas fa-notes-medical me-2"></i>照護報告
-                            <small class="ms-auto text-muted">
-                                <i class="fas fa-clock me-1"></i><span class="report-timestamp"></span>
-                            </small>
-                        </h5>
-                        <div class="report-actions mb-3">
-                            <button id="editReportBtn" class="btn btn-outline-primary btn-sm">
-                                <i class="fas fa-edit me-1"></i>編輯報告
-                            </button>
-                            <button id="saveReportBtn" class="btn btn-success btn-sm d-none">
-                                <i class="fas fa-save me-1"></i>儲存修改
-                            </button>
-                        </div>
-                        <div id="reportContainer" class="report-content"></div>
-                        <div class="d-flex justify-content-end mt-3">
-                            <button id="sendEmailBtn" class="btn btn-primary">
-                                <i class="fas fa-paper-plane me-2"></i>發送報告至信箱
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            </div>
+        <div class="card">
+            <h2>照護記錄結果</h2>
+            <div id="result"></div>
+        </div>
+
+        <div class="footer">
+            © 2025 白頭翁整合照護. All rights reserved.
         </div>
     </div>
 
-    <footer class="mt-5 py-3 text-center text-muted">
-        <small>© 2025 白頭翁整合照護. All rights reserved.</small>
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
-    <script src="{{ url_for('static', filename='js/recorder.js') }}"></script>
     <script>
-        function displayReport(report) {
-            const reportContainer = document.getElementById('reportContainer');
-            // 設定 marked 選項
-            marked.setOptions({
-                breaks: true,  // 支援換行
-                gfm: true,    // 支援 GitHub Flavored Markdown
-                headerIds: false // 避免標題自動添加 ID
-            });
+        document.addEventListener('DOMContentLoaded', async () => {
+            const recordButton = document.getElementById('recordButton');
+            const recordingStatus = document.getElementById('recordingStatus');
             
-            // 渲染 Markdown 內容
-            reportContainer.innerHTML = marked(report);
-        }
-        
-        // 在上傳成功後的處理函數中
-        async function handleUploadSuccess(response) {
-            if (response.success) {
-                displayReport(response.report);
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            let mediaRecorder = null;
+            let mediaRecorder;
             let audioChunks = [];
-            
-            const startButton = document.getElementById('startRecord');
-            const stopButton = document.getElementById('stopRecord');
-            const statusText = document.querySelector('.status-text');
+            let isRecording = false;
 
-            // 檢查並設定 getUserMedia
-            if (navigator.mediaDevices === undefined) {
-                navigator.mediaDevices = {};
+            // 初始化
+            try {
+                if (!window.MediaRecorder || !navigator.mediaDevices?.getUserMedia) {
+                    throw new Error('您的瀏覽器不支援錄音功能');
+                }
+                
+                recordButton.disabled = false;
+                recordingStatus.textContent = '準備就緒';
+                recordingStatus.className = 'status success';
+            } catch (error) {
+                console.error('初始化失敗:', error);
+                recordingStatus.textContent = '初始化失敗: ' + error.message;
+                recordingStatus.className = 'status error';
             }
 
-            if (navigator.mediaDevices.getUserMedia === undefined) {
-                navigator.mediaDevices.getUserMedia = function(constraints) {
-                    // 首先取得舊版的 getUserMedia
-                    var getUserMedia = navigator.webkitGetUserMedia || 
-                                     navigator.mozGetUserMedia ||
-                                     navigator.msGetUserMedia;
+            // 錄音相關功能
+            async function startRecording() {
+                try {
+                    recordingStatus.textContent = '請允許使用麥克風';
+                    recordingStatus.className = 'status warning';
 
-                    // 如果沒有任何版本的 getUserMedia，回傳一個 error
-                    if (!getUserMedia) {
-                        return Promise.reject(new Error('此瀏覽器不支援 getUserMedia!'));
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            sampleRate: 44100,
+                            channelCount: 1
+                        }
+                    });
+
+                    // 選擇支援的音訊格式
+                    const mimeTypes = [
+                        'audio/webm;codecs=opus',
+                        'audio/webm',
+                        'audio/mp4',
+                        'audio/ogg'
+                    ];
+
+                    let selectedMimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
+                    
+                    if (!selectedMimeType) {
+                        throw new Error('找不到支援的音訊格式');
                     }
 
-                    // 將舊版 API 轉換為 Promise
-                    return new Promise(function(resolve, reject) {
-                        getUserMedia.call(navigator, constraints, resolve, reject);
+                    mediaRecorder = new MediaRecorder(stream, {
+                        mimeType: selectedMimeType,
+                        audioBitsPerSecond: 128000
                     });
-                }
-            }
 
-            // 初始化錄音
-            async function initializeRecording() {
-                try {
-                    const stream = await navigator.mediaDevices.getUserMedia({ 
-                        audio: true,
-                        video: false
-                    });
-                    
-                    mediaRecorder = new MediaRecorder(stream);
-                    
                     mediaRecorder.ondataavailable = (event) => {
                         if (event.data.size > 0) {
                             audioChunks.push(event.data);
@@ -280,69 +336,82 @@
                     };
 
                     mediaRecorder.onstop = async () => {
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
+                        const audioBlob = new Blob(audioChunks, { type: selectedMimeType });
                         await uploadAudio(audioBlob);
                     };
 
-                    startButton.disabled = false;
-                    statusText.textContent = '準備就緒';
-                    console.log('錄音功能初始化成功');
+                    audioChunks = [];
+                    mediaRecorder.start();
+                    isRecording = true;
+
+                    recordButton.textContent = '停止錄音';
+                    recordButton.classList.add('recording');
+                    recordingStatus.textContent = '正在錄音...';
+                    recordingStatus.className = 'status warning';
+
                 } catch (error) {
-                    console.error('錄音初始化失敗:', error);
-                    statusText.textContent = '無法初始化錄音';
-                    alert('無法初始化錄音功能: ' + error.message);
+                    console.error('錄音失敗:', error);
+                    recordingStatus.textContent = '錄音失敗: ' + error.message;
+                    recordingStatus.className = 'status error';
                 }
             }
 
-            // 上傳音訊
+            async function stopRecording() {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    mediaRecorder.stop();
+                    isRecording = false;
+
+                    recordButton.textContent = '開始錄音';
+                    recordButton.classList.remove('recording');
+                    recordingStatus.textContent = '處理中...';
+                    recordingStatus.className = 'status warning';
+
+                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                }
+            }
+
             async function uploadAudio(blob) {
                 try {
-                    statusText.textContent = '正在處理錄音...';
                     const formData = new FormData();
-                    formData.append('audio', blob, 'recording.wav');
-                    
-                    const response = await fetch('/upload', {
+                    formData.append('audio', blob, `recording${blob.type.includes('webm') ? '.webm' : '.mp4'}`);
+
+                    const response = await fetch('/care-record/upload', {
                         method: 'POST',
                         body: formData
                     });
 
+                    if (!response.ok) {
+                        throw new Error(`上傳失敗 (${response.status})`);
+                    }
+
                     const data = await response.json();
-                    document.getElementById('result').textContent = data.text || '轉錄失敗';
-                    statusText.textContent = '處理完成';
+
+                    if (data.success) {
+                        document.getElementById('result').innerHTML = `
+                            <h3>語音內容：</h3>
+                            <p>${data.text}</p>
+                            <h3>照護報告：</h3>
+                            <p>${data.report.replace(/\n/g, '<br>')}</p>
+                        `;
+                        recordingStatus.textContent = '完成';
+                        recordingStatus.className = 'status success';
+                    } else {
+                        throw new Error(data.error || '處理失敗');
+                    }
                 } catch (error) {
-                    console.error('上傳失敗:', error);
-                    statusText.textContent = '上傳失敗';
-                    alert('上傳錄音檔案失敗');
+                    console.error('上傳錯誤:', error);
+                    recordingStatus.textContent = '上傳失敗: ' + error.message;
+                    recordingStatus.className = 'status error';
                 }
             }
 
-            // 開始錄音
-            startButton.onclick = () => {
-                if (mediaRecorder && mediaRecorder.state === 'inactive') {
-                    audioChunks = [];
-                    mediaRecorder.start();
-                    startButton.disabled = true;
-                    stopButton.disabled = false;
-                    statusText.textContent = '正在錄音...';
-                    console.log('開始錄音');
+            // 綁定按鈕事件
+            recordButton.addEventListener('click', () => {
+                if (!isRecording) {
+                    startRecording();
+                } else {
+                    stopRecording();
                 }
-            };
-
-            // 停止錄音
-            stopButton.onclick = () => {
-                if (mediaRecorder && mediaRecorder.state === 'recording') {
-                    mediaRecorder.stop();
-                    startButton.disabled = false;
-                    stopButton.disabled = true;
-                    statusText.textContent = '錄音結束';
-                    console.log('停止錄音');
-                }
-            };
-
-            // 初始化
-            initializeRecording().catch(error => {
-                console.error('初始化失敗:', error);
-                statusText.textContent = '初始化失敗';
             });
         });
     </script>

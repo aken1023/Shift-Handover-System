@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>錄音功能測試</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+        .warning {
+            background-color: #fff3cd;
+            color: #856404;
+        }
+        #recordButton {
+            padding: 10px 20px;
+            font-size: 16px;
+            border: none;
+            border-radius: 4px;
+            background-color: #007bff;
+            color: white;
+            cursor: pointer;
+            margin: 10px 0;
+        }
+        #recordButton:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #recordButton.recording {
+            background-color: #dc3545;
+        }
+        #debugInfo {
+            margin-top: 20px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <h1>錄音功能測試頁面</h1>
+    
+    <div class="test-section">
+        <h2>瀏覽器相容性檢查</h2>
+        <div id="compatibilityStatus"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>音訊格式支援</h2>
+        <div id="formatSupport"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>錄音測試</h2>
+        <button id="recordButton" disabled>
+            <span>開始錄音</span>
+        </button>
+        <div id="recordingStatus" class="status">準備中...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>錄音結果</h2>
+        <div id="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>調試資訊</h2>
+        <div id="debugInfo"></div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', async () => {
+            const compatibilityStatus = document.getElementById('compatibilityStatus');
+            const formatSupport = document.getElementById('formatSupport');
+            const recordButton = document.getElementById('recordButton');
+            const recordingStatus = document.getElementById('recordingStatus');
+            const debugInfo = document.getElementById('debugInfo');
+            
+            let mediaRecorder;
+            let audioChunks = [];
+            let isRecording = false;
+
+            // 檢查瀏覽器支援
+            function checkCompatibility() {
+                const checks = {
+                    'MediaRecorder API': !!window.MediaRecorder,
+                    'getUserMedia': !!navigator.mediaDevices?.getUserMedia,
+                    'Blob': !!window.Blob,
+                    'FormData': !!window.FormData,
+                    'Fetch API': !!window.fetch
+                };
+
+                let html = '<ul>';
+                for (const [feature, supported] of Object.entries(checks)) {
+                    html += `<li>${feature}: <span class="${supported ? 'success' : 'error'}">${supported ? '支援' : '不支援'}</span></li>`;
+                }
+                html += '</ul>';
+                
+                compatibilityStatus.innerHTML = html;
+                return Object.values(checks).every(v => v);
+            }
+
+            // 檢查音訊格式支援
+            function checkAudioFormats() {
+                const mimeTypes = [
+                    'audio/webm',
+                    'audio/webm;codecs=opus',
+                    'audio/mp4',
+                    'audio/mp4;codecs=mp4a',
+                    'audio/ogg',
+                    'audio/ogg;codecs=opus'
+                ];
+
+                let html = '<ul>';
+                for (const type of mimeTypes) {
+                    const supported = MediaRecorder.isTypeSupported(type);
+                    html += `<li>${type}: <span class="${supported ? 'success' : 'error'}">${supported ? '支援' : '不支援'}</span></li>`;
+                }
+                html += '</ul>';
+                
+                formatSupport.innerHTML = html;
+            }
+
+            // 初始化
+            try {
+                const isCompatible = checkCompatibility();
+                if (isCompatible) {
+                    checkAudioFormats();
+                    recordButton.disabled = false;
+                    recordingStatus.textContent = '準備就緒';
+                    recordingStatus.className = 'status success';
+                } else {
+                    recordingStatus.textContent = '您的瀏覽器不支援所需功能';
+                    recordingStatus.className = 'status error';
+                }
+            } catch (error) {
+                console.error('初始化失敗:', error);
+                recordingStatus.textContent = '初始化失敗: ' + error.message;
+                recordingStatus.className = 'status error';
+            }
+
+            // 錄音相關功能
+            async function startRecording() {
+                try {
+                    debugInfo.innerHTML += '<p>開始錄音...</p>';
+                    recordingStatus.textContent = '請允許使用麥克風';
+                    recordingStatus.className = 'status warning';
+
+                    const stream = await navigator.mediaDevices.getUserMedia({
+                        audio: {
+                            echoCancellation: true,
+                            noiseSuppression: true,
+                            sampleRate: 44100,
+                            channelCount: 1
+                        }
+                    });
+
+                    debugInfo.innerHTML += '<p>已取得麥克風權限</p>';
+
+                    // 選擇支援的音訊格式
+                    const mimeTypes = [
+                        'audio/webm;codecs=opus',
+                        'audio/webm',
+                        'audio/mp4',
+                        'audio/ogg'
+                    ];
+
+                    let selectedMimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
+                    
+                    if (!selectedMimeType) {
+                        throw new Error('找不到支援的音訊格式');
+                    }
+
+                    debugInfo.innerHTML += `<p>使用音訊格式: ${selectedMimeType}</p>`;
+
+                    mediaRecorder = new MediaRecorder(stream, {
+                        mimeType: selectedMimeType,
+                        audioBitsPerSecond: 128000
+                    });
+
+                    mediaRecorder.ondataavailable = (event) => {
+                        if (event.data.size > 0) {
+                            audioChunks.push(event.data);
+                        }
+                    };
+
+                    mediaRecorder.onstop = async () => {
+                        debugInfo.innerHTML += '<p>錄音結束，準備上傳</p>';
+                        const audioBlob = new Blob(audioChunks, { type: selectedMimeType });
+                        await uploadAudio(audioBlob);
+                    };
+
+                    audioChunks = [];
+                    mediaRecorder.start();
+                    isRecording = true;
+
+                    recordButton.textContent = '停止錄音';
+                    recordButton.classList.add('recording');
+                    recordingStatus.textContent = '正在錄音...';
+                    recordingStatus.className = 'status warning';
+
+                } catch (error) {
+                    console.error('錄音失敗:', error);
+                    debugInfo.innerHTML += `<p class="error">錄音失敗: ${error.message}</p>`;
+                    recordingStatus.textContent = '錄音失敗: ' + error.message;
+                    recordingStatus.className = 'status error';
+                }
+            }
+
+            async function stopRecording() {
+                if (mediaRecorder && mediaRecorder.state === 'recording') {
+                    debugInfo.innerHTML += '<p>停止錄音</p>';
+                    mediaRecorder.stop();
+                    isRecording = false;
+
+                    recordButton.textContent = '開始錄音';
+                    recordButton.classList.remove('recording');
+                    recordingStatus.textContent = '處理中...';
+                    recordingStatus.className = 'status warning';
+
+                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                }
+            }
+
+            async function uploadAudio(blob) {
+                try {
+                    debugInfo.innerHTML += `<p>開始上傳 (${blob.size} bytes)</p>`;
+                    const formData = new FormData();
+                    formData.append('audio', blob, `recording${blob.type.includes('webm') ? '.webm' : '.mp4'}`);
+
+                    const response = await fetch('/care-record/upload', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`上傳失敗 (${response.status})`);
+                    }
+
+                    const data = await response.json();
+                    debugInfo.innerHTML += '<p>上傳成功</p>';
+
+                    if (data.success) {
+                        document.getElementById('result').innerHTML = `
+                            <h3>語音內容：</h3>
+                            <p>${data.text}</p>
+                            <h3>照護報告：</h3>
+                            <p>${data.report.replace(/\n/g, '<br>')}</p>
+                        `;
+                        recordingStatus.textContent = '完成';
+                        recordingStatus.className = 'status success';
+                    } else {
+                        throw new Error(data.error || '處理失敗');
+                    }
+                } catch (error) {
+                    console.error('上傳錯誤:', error);
+                    debugInfo.innerHTML += `<p class="error">上傳失敗: ${error.message}</p>`;
+                    recordingStatus.textContent = '上傳失敗: ' + error.message;
+                    recordingStatus.className = 'status error';
+                }
+            }
+
+            // 綁定按鈕事件
+            recordButton.addEventListener('click', () => {
+                if (!isRecording) {
+                    startRecording();
+                } else {
+                    stopRecording();
+                }
+            });
+        });
+    </script>
+</body>
+</html> 
