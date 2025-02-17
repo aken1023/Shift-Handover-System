@@ -24,30 +24,40 @@ load_dotenv(override=True)
 
 def get_openai_key():
     """獲取 OpenAI API 金鑰"""
-    # 直接從環境變數獲取
-    api_key = os.getenv('OPENAI_API_KEY')
+    # 直接從 Railway 環境變數獲取
+    api_key = os.environ.get('OPENAI_API_KEY')
+    
+    # 調試資訊
+    logger.info("開始檢查 API 金鑰")
+    logger.info(f"環境變數中是否存在 OPENAI_API_KEY: {'是' if api_key else '否'}")
     
     if api_key:
-        logger.info("成功從環境變數獲取 API 金鑰")
+        logger.info(f"API 金鑰長度: {len(api_key)}")
+        logger.info(f"API 金鑰前綴: {api_key[:4]}...")
+        
         # 檢查金鑰格式
         if api_key.startswith('sk-'):
+            logger.info("API 金鑰格式正確")
             return api_key
         else:
-            logger.error("API 金鑰格式不正確")
+            logger.error("API 金鑰格式不正確 - 應該以 sk- 開頭")
     else:
-        logger.error("無法從環境變數獲取 API 金鑰")
-        # 列出所有可用的環境變數名稱（不包含值）
-        logger.info("可用的環境變數：" + ", ".join(k for k in os.environ.keys()))
+        logger.error("無法從 Railway 環境變數獲取 API 金鑰")
+        # 列出所有環境變數名稱
+        env_vars = sorted(os.environ.keys())
+        logger.info(f"可用的環境變數: {', '.join(env_vars)}")
     
     raise ValueError("未設定 OPENAI_API_KEY 環境變數或格式不正確")
 
 # 設定 OpenAI API 金鑰
 import openai
 try:
+    logger.info("嘗試設定 OpenAI API 金鑰")
     openai.api_key = get_openai_key()
     logger.info("OpenAI API 金鑰設定完成")
 except Exception as e:
     logger.error(f"設定 API 金鑰時發生錯誤: {str(e)}")
+    logger.error(f"錯誤類型: {type(e).__name__}")
     raise
 
 # 建立一個環形緩衝區來存儲最近的錯誤日誌
