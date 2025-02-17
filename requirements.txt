@@ -4,4 +4,6 @@ openai==0.28.0
 SpeechRecognition
 pydub
 httpx
-Werkzeug 
+Werkzeug
+numpy
+scipy 

@@ -13,15 +13,42 @@ from pydub import AudioSegment
 import json
 from dotenv import load_dotenv
 import openai
+import subprocess
 
-# 嘗試載入 .env 檔案（本地開發用），但不會在找不到檔案時報錯
+# 設定日誌
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# 嘗試載入 .env 檔案
 load_dotenv(override=True)
 
-# 優先使用環境變數中的設定
-openai.api_key = os.environ.get('OPENAI_API_KEY')
+def get_openai_key():
+    """獲取 OpenAI API 金鑰"""
+    # 直接從環境變數獲取
+    api_key = os.environ.get('OPENAI_API_KEY')
+    
+    if api_key:
+        logger.info("成功從環境變數獲取 API 金鑰")
+        # 檢查金鑰格式
+        if api_key.startswith('sk-'):
+            return api_key
+        else:
+            logger.error("API 金鑰格式不正確")
+    else:
+        logger.error("無法從環境變數獲取 API 金鑰")
+        # 列出所有可用的環境變數名稱（不包含值）
+        logger.info("可用的環境變數：" + ", ".join(k for k in os.environ.keys()))
+    
+    raise ValueError("未設定 OPENAI_API_KEY 環境變數或格式不正確")
 
-if not openai.api_key:
-    raise ValueError("未設定 OPENAI_API_KEY 環境變數")
+# 設定 OpenAI API 金鑰
+import openai
+try:
+    openai.api_key = get_openai_key()
+    logger.info("OpenAI API 金鑰設定完成")
+except Exception as e:
+    logger.error(f"設定 API 金鑰時發生錯誤: {str(e)}")
+    raise
 
 # 建立一個環形緩衝區來存儲最近的錯誤日誌
 error_logs = deque(maxlen=100)  # 保存最近100條日誌
@@ -349,6 +376,27 @@ def send_email():
     except Exception as e:
         log_error('EmailError', f"發送郵件時發生錯誤: {str(e)}", traceback.format_exc())
         return jsonify({'error': f"發送郵件時發生錯誤: {str(e)}"}), 500
+
+@app.route('/check-ffmpeg')
+def check_ffmpeg_endpoint():
+    """檢查 FFmpeg 狀態的端點"""
+    try:
+        # 檢查 ffmpeg 路徑
+        ffmpeg_path = subprocess.check_output(['which', 'ffmpeg']).decode().strip()
+        
+        # 檢查版本
+        version = subprocess.check_output(['ffmpeg', '-version']).decode()
+        
+        return jsonify({
+            'status': 'ok',
+            'ffmpeg_path': ffmpeg_path,
+            'version': version.split('\n')[0]
+        })
+    except Exception as e:
+        return jsonify({
+            'status': 'error',
+            'error': str(e)
+        }), 500
 
 # 設定 Flask 環境
 app.config['ENV'] = os.environ.get('FLASK_ENV', 'production')

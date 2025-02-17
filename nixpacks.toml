@@ -1,10 +1,23 @@
 [phases.setup]
-nixPkgs = ['python39', 'gcc']
+nixPkgs = [
+  'python39',
+  'gcc',
+  'ffmpeg',
+  'libav',
+  'pkg-config'
+]
 
 [phases.install]
 cmds = [
   'python -m venv /opt/venv && . /opt/venv/bin/activate',
   'pip install -r requirements.txt'
+]
+
+[phases.build]
+cmds = [
+  # 確保 ffmpeg 可執行
+  'which ffmpeg',
+  'ffmpeg -version'
 ]
 
 [start]
