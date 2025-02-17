@@ -236,6 +236,37 @@
                 padding: 0.8rem;
             }
         }
+
+        .care-report {
+            padding: 20px;
+        }
+        
+        .speech-content {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-style: italic;
+        }
+        
+        .report-sections section {
+            margin: 20px 0;
+            padding: 15px;
+            border-left: 3px solid var(--primary-color);
+            background: rgba(255, 192, 203, 0.05);
+        }
+        
+        .report-sections h4 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            font-weight: 500;
+        }
+        
+        .report-sections p {
+            line-height: 1.6;
+            color: var(--text-color);
+            margin: 0;
+        }
     </style>
 </head>
 <body>
@@ -248,11 +279,11 @@
             <div class="tips">
                 <h3>照護語音紀錄重點</h3>
                 <ul>
-                    <li>病患基本狀況說明</li>
-                    <li>生命徵象數據記錄</li>
-                    <li>已執行照護項目</li>
-                    <li>特殊觀察重點提醒</li>
-                    <li>後續照護建議事項</li>
+                    <li>病患主要診斷與生命徵象</li>
+                    <li>重要管路與傷口評估</li>
+                    <li>特殊藥物使用與治療</li>
+                    <li>護理重點與異常狀況</li>
+                    <li>後續照護計畫與注意事項</li>
                 </ul>
             </div>
 
@@ -388,10 +419,38 @@
 
                     if (data.success) {
                         document.getElementById('result').innerHTML = `
-                            <h3>語音內容：</h3>
-                            <p>${data.text}</p>
-                            <h3>照護報告：</h3>
-                            <p>${data.report.replace(/\n/g, '<br>')}</p>
+                            <div class="care-report">
+                                <h3>語音內容：</h3>
+                                <p class="speech-content">${data.text}</p>
+                                
+                                <h3>照護評估報告：</h3>
+                                <div class="report-sections">
+                                    <section>
+                                        <h4>1. 病患主要診斷與生命徵象</h4>
+                                        <p>${data.report.diagnosis || '無相關資訊'}</p>
+                                    </section>
+                                    
+                                    <section>
+                                        <h4>2. 重要管路與傷口評估</h4>
+                                        <p>${data.report.tubes || '無相關資訊'}</p>
+                                    </section>
+                                    
+                                    <section>
+                                        <h4>3. 特殊藥物使用與治療</h4>
+                                        <p>${data.report.medications || '無相關資訊'}</p>
+                                    </section>
+                                    
+                                    <section>
+                                        <h4>4. 護理重點與異常狀況</h4>
+                                        <p>${data.report.nursing_focus || '無相關資訊'}</p>
+                                    </section>
+                                    
+                                    <section>
+                                        <h4>5. 後續照護計畫與注意事項</h4>
+                                        <p>${data.report.care_plan || '無相關資訊'}</p>
+                                    </section>
+                                </div>
+                            </div>
                         `;
                         recordingStatus.textContent = '完成';
                         recordingStatus.className = 'status success';

@@ -221,45 +221,45 @@ def index():
     return render_template('index.html')
 
 def generate_care_report(text):
-    """使用 OpenAI 生成照護報告"""
+    prompt = f"""
+    你是一位專業的護理人員，請依照以下架構，整理並分析這段護理交班的語音內容：
+    "{text}"
+
+    請使用以下固定格式回覆，並確保每個項目都有適當的內容：
+
+    照護評估報告：
+
+    1. 病患主要診斷與生命徵象
+    [分析病人的主要診斷、目前生命徵象數據，以及整體狀況評估]
+
+    2. 重要管路與傷口評估
+    [評估所有管路位置、類型、更換時間，以及傷口狀況、換藥紀錄]
+
+    3. 特殊藥物使用與治療
+    [列出重要藥物使用情況、治療計畫執行狀況]
+
+    4. 護理重點與異常狀況
+    [說明需要特別注意的護理重點、異常狀況的觀察與處理]
+
+    5. 後續照護計畫與注意事項
+    [提供後續照護建議、特別注意事項]
+
+    請以專業護理角度分析內容，如果某個項目在語音內容中沒有提到，請標註「無相關資訊」。
+    """
+
     try:
-        logger.info("開始生成照護報告")
-        logger.info(f"輸入文字: {text}")
-        
-        client = get_openai_client()
-        
-        # 定義系統提示詞
-        system_prompt = """
-        你是一個專業的護理師，負責將口述內容轉換成正式的照護報告。
-        請將輸入的內容整理成以下格式：
-        
-        1. 生理狀況：
-        2. 特殊狀況：
-        3. 後續處置：
-        4. 注意事項：
-        
-        請使用專業但容易理解的用語。
-        """
-        
-        # 呼叫 GPT API
-        response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+        response = get_openai_client().chat.completions.create(
+            model="gpt-4",  # 或使用其他適合的模型
             messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": text}
+                {"role": "system", "content": "你是一位專業的護理人員，擅長整理護理交班紀錄。"},
+                {"role": "user", "content": prompt}
             ],
-            temperature=0.7,
-            max_tokens=1000
+            temperature=0.7
         )
-        
-        report = response.choices[0].message.content
-        logger.info(f"生成的報告: {report}")
-        
-        return report
-        
+        return response.choices[0].message['content']
     except Exception as e:
-        logger.error(f"生成報告失敗: {str(e)}", exc_info=True)
-        raise
+        logger.error(f"GPT API 錯誤: {str(e)}")
+        return "無法生成報告"
 
 def save_transcription_log(log_data, audio_file_path):
     """保存轉錄記錄和語音檔案"""
