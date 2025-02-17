@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>白頭翁整合照護智慧照護記錄系統</title>
+    <title>照護交班系統</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -167,8 +167,11 @@
         }
 
         #result {
-            margin-top: 1.5rem;
-            line-height: 1.8;
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
 
         .footer {
@@ -238,28 +241,26 @@
         }
 
         .care-report {
-            padding: 20px;
+            margin-top: 20px;
         }
         
         .speech-content {
-            background: #f8f9fa;
+            background-color: #f8f9fa;
             padding: 15px;
             border-radius: 8px;
-            margin: 10px 0;
-            font-style: italic;
+            margin-bottom: 20px;
         }
         
         .report-sections section {
-            margin: 20px 0;
+            margin: 15px 0;
             padding: 15px;
-            border-left: 3px solid var(--primary-color);
-            background: rgba(255, 192, 203, 0.05);
+            border-left: 3px solid #FF9F9F;
+            background-color: #FFF5F5;
         }
         
         .report-sections h4 {
-            color: var(--primary-color);
+            color: #4A4A4A;
             margin-bottom: 10px;
-            font-weight: 500;
         }
         
         .report-sections p {
@@ -267,11 +268,52 @@
             color: var(--text-color);
             margin: 0;
         }
+
+        .result-card {
+            display: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .result-card.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        #resultContainer {
+            margin-top: 30px;
+            display: none; /* 預設隱藏 */
+        }
+        
+        #result {
+            margin: 20px 0;
+        }
+        
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .result-section {
+            margin-top: 30px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .hidden {
+            display: none;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>白頭翁整合照護智慧照護記錄系統</h1>
+        <h1>照護交班系統</h1>
         
         <div class="card">
             <h2>語音照護記錄</h2>
@@ -290,13 +332,15 @@
             <div id="recordingStatus" class="status">準備就緒</div>
             <button id="recordButton" disabled>開始錄音</button>
             <div class="timer" id="timer">00:00</div>
+        
         </div>
 
-        <div class="card">
+        <div class="result-section hidden" id="resultSection">
             <h2>照護記錄結果</h2>
             <div id="result"></div>
         </div>
 
+    
         <div class="footer">
             © 2025 白頭翁整合照護. All rights reserved.
         </div>
@@ -406,6 +450,11 @@
                     const formData = new FormData();
                     formData.append('audio', blob, `recording${blob.type.includes('webm') ? '.webm' : '.mp4'}`);
 
+                    const recordingStatus = document.getElementById('recordingStatus');
+                    recordingStatus.textContent = '正在處理...';
+                    recordingStatus.className = 'status warning';
+
+                    // 發送請求
                     const response = await fetch('/care-record/upload', {
                         method: 'POST',
                         body: formData
@@ -416,50 +465,36 @@
                     }
 
                     const data = await response.json();
+                    console.log('API 回應:', data); // 檢查回應數據
 
                     if (data.success) {
-                        document.getElementById('result').innerHTML = `
-                            <div class="care-report">
+                        // 直接顯示原始回應內容進行測試
+                        const resultDiv = document.getElementById('result');
+                        resultDiv.innerHTML = `
+                            <div style="margin: 20px; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
                                 <h3>語音內容：</h3>
-                                <p class="speech-content">${data.text}</p>
+                                <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px;">${data.text || '無語音內容'}</pre>
                                 
                                 <h3>照護評估報告：</h3>
-                                <div class="report-sections">
-                                    <section>
-                                        <h4>1. 病患主要診斷與生命徵象</h4>
-                                        <p>${data.report.diagnosis || '無相關資訊'}</p>
-                                    </section>
-                                    
-                                    <section>
-                                        <h4>2. 重要管路與傷口評估</h4>
-                                        <p>${data.report.tubes || '無相關資訊'}</p>
-                                    </section>
-                                    
-                                    <section>
-                                        <h4>3. 特殊藥物使用與治療</h4>
-                                        <p>${data.report.medications || '無相關資訊'}</p>
-                                    </section>
-                                    
-                                    <section>
-                                        <h4>4. 護理重點與異常狀況</h4>
-                                        <p>${data.report.nursing_focus || '無相關資訊'}</p>
-                                    </section>
-                                    
-                                    <section>
-                                        <h4>5. 後續照護計畫與注意事項</h4>
-                                        <p>${data.report.care_plan || '無相關資訊'}</p>
-                                    </section>
-                                </div>
+                                <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px;">${data.report || '無報告內容'}</pre>
                             </div>
                         `;
+                        
+                        // 顯示結果容器
+                        document.getElementById('resultSection').classList.remove('hidden');
+                        
+                        // 更新狀態
                         recordingStatus.textContent = '完成';
                         recordingStatus.className = 'status success';
+                        
+                        // 滾動到結果區域
+                        resultDiv.scrollIntoView({ behavior: 'smooth' });
                     } else {
                         throw new Error(data.error || '處理失敗');
                     }
                 } catch (error) {
-                    console.error('上傳錯誤:', error);
-                    recordingStatus.textContent = '上傳失敗: ' + error.message;
+                    console.error('處理錯誤:', error);
+                    recordingStatus.textContent = '處理失敗: ' + error.message;
                     recordingStatus.className = 'status error';
                 }
             }

@@ -5,11 +5,17 @@ let timerInterval;
 let startTime;
 const recordButton = document.getElementById('recordButton');
 const recordingStatus = document.getElementById('recordingStatus');
+let originalText = '';
+let currentReport = '';
 
 async function uploadAudio(blob) {
     try {
         const formData = new FormData();
         formData.append('audio', blob, `recording${blob.type.includes('webm') ? '.webm' : '.mp4'}`);
+
+        const recordingStatus = document.getElementById('recordingStatus');
+        recordingStatus.textContent = '正在處理...';
+        recordingStatus.className = 'status warning';
 
         const response = await fetch('/care-record/upload', {
             method: 'POST',
@@ -21,50 +27,19 @@ async function uploadAudio(blob) {
         }
 
         const data = await response.json();
+        console.log('API 回應:', data);
 
         if (data.success) {
-            document.getElementById('result').innerHTML = `
-                <div class="care-report">
-                    <h3>語音內容：</h3>
-                    <p class="speech-content">${data.text}</p>
-                    
-                    <h3>照護評估報告：</h3>
-                    <div class="report-sections">
-                        <section>
-                            <h4>1. 病患主要診斷與生命徵象</h4>
-                            <p>${data.report.diagnosis || '無相關資訊'}</p>
-                        </section>
-                        
-                        <section>
-                            <h4>2. 重要管路與傷口評估</h4>
-                            <p>${data.report.tubes || '無相關資訊'}</p>
-                        </section>
-                        
-                        <section>
-                            <h4>3. 特殊藥物使用與治療</h4>
-                            <p>${data.report.medications || '無相關資訊'}</p>
-                        </section>
-                        
-                        <section>
-                            <h4>4. 護理重點與異常狀況</h4>
-                            <p>${data.report.nursing_focus || '無相關資訊'}</p>
-                        </section>
-                        
-                        <section>
-                            <h4>5. 後續照護計畫與注意事項</h4>
-                            <p>${data.report.care_plan || '無相關資訊'}</p>
-                        </section>
-                    </div>
-                </div>
-            `;
+            originalText = data.text;  // 保存原始文本
+            displayResult(data);
             recordingStatus.textContent = '完成';
             recordingStatus.className = 'status success';
         } else {
             throw new Error(data.error || '處理失敗');
         }
     } catch (error) {
-        console.error('上傳錯誤:', error);
-        recordingStatus.textContent = '上傳失敗: ' + error.message;
+        console.error('錯誤:', error);
+        recordingStatus.textContent = '處理失敗: ' + error.message;
         recordingStatus.className = 'status error';
     }
 }
@@ -103,6 +78,7 @@ function checkAudioFormats() {
     return supportedFormats;
 }
 
+// 計時器更新函數
 function updateTimer() {
     const now = new Date();
     const diff = now - startTime;
@@ -112,7 +88,7 @@ function updateTimer() {
     const timer = document.getElementById('timer');
     if (timer) {
         timer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        console.log('更新時間:', timer.textContent);
+        timer.style.display = 'block'; // 確保計時器可見
     }
 }
 
@@ -122,6 +98,14 @@ async function startRecording() {
         const recordingStatus = document.getElementById('recordingStatus');
         const timer = document.getElementById('timer');
         
+        // 重置並啟動計時器
+        startTime = new Date();
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
+        timerInterval = setInterval(updateTimer, 1000);
+   
+
         if (recordingStatus) {
             recordingStatus.textContent = '請允許使用麥克風';
             recordingStatus.className = 'status warning';
@@ -173,14 +157,7 @@ async function startRecording() {
         audioChunks = [];
         mediaRecorder.start();
         isRecording = true;
-
-        // 啟動計時器
-        startTime = new Date();
-        if (timerInterval) {
-            clearInterval(timerInterval);
-        }
-        timerInterval = setInterval(updateTimer, 1000);
-        updateTimer();
+        updateTimer(); // 立即更新一次計時器
 
         // 更新 UI
         const recordButton = document.getElementById('recordButton');
@@ -196,7 +173,7 @@ async function startRecording() {
         
         if (timer) {
             timer.style.display = 'block';
-            timer.textContent = '00:00';
+            
         }
 
     } catch (error) {
@@ -206,33 +183,34 @@ async function startRecording() {
             recordingStatus.textContent = '錄音失敗: ' + error.message;
             recordingStatus.className = 'status error';
         }
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
     }
 }
 
 async function stopRecording() {
     if (mediaRecorder && mediaRecorder.state === 'recording') {
-        mediaRecorder.stop();
-        isRecording = false;
-
         // 停止計時器
         if (timerInterval) {
             clearInterval(timerInterval);
             timerInterval = null;
         }
 
-        const recordButton = document.getElementById('recordButton');
         const timer = document.getElementById('timer');
+ 
+
+        mediaRecorder.stop();
+        isRecording = false;
+
+        const recordButton = document.getElementById('recordButton');
+        const recordingStatus = document.getElementById('recordingStatus');
         
         if (recordButton) {
             recordButton.textContent = '開始錄音';
             recordButton.classList.remove('recording');
         }
 
-        if (timer) {
-            timer.textContent = '00:00';
-        }
-
-        const recordingStatus = document.getElementById('recordingStatus');
         if (recordingStatus) {
             recordingStatus.textContent = '處理中...';
             recordingStatus.className = 'status warning';
@@ -292,4 +270,102 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     console.log('錄音功能初始化完成');
-}); 
+
+    const timer = document.getElementById('timer');
+    if (timer) {
+        timer.style.display = 'block';
+        
+    }
+});
+
+function showEditForm() {
+    const resultSection = document.getElementById('result-section');
+    resultSection.innerHTML = `
+        <div class="edit-form">
+            <h3>編輯語音內容</h3>
+            <textarea id="editText" rows="6" class="form-control">${originalText}</textarea>
+            <div class="button-group">
+                <button onclick="saveEdit()" class="btn btn-primary">儲存</button>
+                <button onclick="cancelEdit()" class="btn btn-secondary">取消</button>
+            </div>
+        </div>
+    `;
+}
+
+async function saveEdit() {
+    try {
+        const editedText = document.getElementById('editText').value;
+        const recordingStatus = document.getElementById('recordingStatus');
+        
+        recordingStatus.textContent = '處理中...';
+        recordingStatus.className = 'status warning';
+
+        const response = await fetch('/care-record/edit', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                text: originalText,  // 保存原始文本
+                edited_text: editedText
+            })
+        });
+
+        const data = await response.json();
+        
+        if (data.success) {
+            originalText = editedText;  // 更新原始文本
+            displayResult(data);
+            recordingStatus.textContent = '完成';
+            recordingStatus.className = 'status success';
+        } else {
+            throw new Error(data.error || '處理失敗');
+        }
+    } catch (error) {
+        console.error('編輯錯誤:', error);
+        const recordingStatus = document.getElementById('recordingStatus');
+        recordingStatus.textContent = '處理失敗: ' + error.message;
+        recordingStatus.className = 'status error';
+    }
+}
+
+function cancelEdit() {
+    // 恢復原始顯示
+    displayResult({
+        text: originalText,
+        report: currentReport
+    });
+}
+
+// 修改 displayResult 函數
+function displayResult(data) {
+    const resultSection = document.getElementById('result-section');
+    
+    // 保存當前報告和文本
+    currentReport = data.report;
+    originalText = data.text;
+    
+    resultSection.innerHTML = `
+        <div class="result-container">
+            <div class="speech-text">
+                <h3>語音內容</h3>
+                <p>${data.text}</p>
+                <button onclick="showEditForm()" class="btn btn-edit">
+                    編輯內容
+                </button>
+            </div>
+            <div class="report">
+                <h3>照護評估報告</h3>
+                <div class="report-content">
+                    ${formatReport(data.report)}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function formatReport(report) {
+    // 實現報告格式化的邏輯
+    // 這裡需要根據實際的報告格式來實現
+    return report;
+} 

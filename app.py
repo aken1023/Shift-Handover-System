@@ -14,6 +14,7 @@ import json
 from dotenv import load_dotenv
 from openai import OpenAI
 import time
+import openai
 
 # 載入 .env 檔案
 load_dotenv()
@@ -107,9 +108,11 @@ logger = logging.getLogger(__name__)
 # 設定代理伺服器支援
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
-# 確保上傳目錄存在
-UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# 設定上傳資料夾
+UPLOAD_FOLDER = 'uploads'
+if not os.path.exists(UPLOAD_FOLDER):
+    os.makedirs(UPLOAD_FOLDER)
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # 設定允許的檔案類型
 ALLOWED_EXTENSIONS = {'m4a', 'mp4'}  # 只允許 MP4 相關格式
@@ -135,22 +138,23 @@ def convert_webm_to_wav(webm_path):
 def speech_to_text(audio_path):
     """將音訊檔案轉換為文字"""
     try:
-        recognizer = sr.Recognizer()
-        with sr.AudioFile(audio_path) as source:
-            audio = recognizer.record(source)
+        client = get_openai_client()
         
-        # 使用 Google 語音辨識（中文）
-        text = recognizer.recognize_google(audio, language='zh-TW')
+        with open(audio_path, "rb") as audio_file:
+            transcript = client.audio.transcriptions.create(
+                model="whisper-1",
+                file=audio_file,
+                language="zh"
+            )
+            
+        # 從 Transcription 物件中取得文字內容
+        text = transcript.text
+        print(f"語音轉文字結果: {text}")
         return text
-    except sr.UnknownValueError:
-        logger.error("無法辨識語音內容")
-        return "無法辨識語音內容，請重新錄音。"
-    except sr.RequestError as e:
-        logger.error(f"語音辨識服務錯誤: {str(e)}")
-        return "語音辨識服務暫時無法使用，請稍後再試。"
+        
     except Exception as e:
-        logger.error(f"語音轉文字過程發生錯誤: {str(e)}")
-        raise
+        print(f"語音轉文字錯誤: {str(e)}")
+        return None
 
 def log_error(error_type, message, traceback_info=None):
     """統一的錯誤日誌記錄函數"""
@@ -221,45 +225,62 @@ def index():
     return render_template('index.html')
 
 def generate_care_report(text):
-    prompt = f"""
-    你是一位專業的護理人員，請依照以下架構，整理並分析這段護理交班的語音內容：
-    "{text}"
-
-    請使用以下固定格式回覆，並確保每個項目都有適當的內容：
-
-    照護評估報告：
-
-    1. 病患主要診斷與生命徵象
-    [分析病人的主要診斷、目前生命徵象數據，以及整體狀況評估]
-
-    2. 重要管路與傷口評估
-    [評估所有管路位置、類型、更換時間，以及傷口狀況、換藥紀錄]
-
-    3. 特殊藥物使用與治療
-    [列出重要藥物使用情況、治療計畫執行狀況]
-
-    4. 護理重點與異常狀況
-    [說明需要特別注意的護理重點、異常狀況的觀察與處理]
-
-    5. 後續照護計畫與注意事項
-    [提供後續照護建議、特別注意事項]
-
-    請以專業護理角度分析內容，如果某個項目在語音內容中沒有提到，請標註「無相關資訊」。
-    """
-
     try:
-        response = get_openai_client().chat.completions.create(
-            model="gpt-4",  # 或使用其他適合的模型
-            messages=[
-                {"role": "system", "content": "你是一位專業的護理人員，擅長整理護理交班紀錄。"},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.7
+        if not isinstance(text, str):
+            text = str(text)
+        
+        print("開始生成報告，輸入文本:", text)
+
+        client = get_openai_client()
+
+        messages = [
+            {
+                "role": "system", 
+                "content": "你是一位專業的護理人員，擅長整理護理交接班紀錄。"
+            },
+            {
+                "role": "user",
+                "content": f"""
+                請根據以下的口述內容，整理成一份完整的護理交接班紀錄：
+
+                口述內容：{text}
+
+                請依照以下固定格式撰寫交接班紀錄：
+
+                1. 病患主要診斷與生命徵象
+                [根據口述內容，整理出病患的主要診斷、目前生命徵象和整體狀況]
+
+                2. 重要管路與傷口評估
+                [根據口述內容，說明病患目前的管路使用情況、傷口狀況等]
+
+                3. 特殊藥物使用與治療
+                [根據口述內容，列出重要藥物使用情況、治療計畫執行狀況]
+
+                4. 護理重點與異常狀況
+                [根據口述內容，說明需要特別注意的護理重點、異常狀況]
+
+                5. 後續照護計畫與注意事項
+                [根據口述內容，提供後續照護建議、特別注意事項]
+
+                如果某些資訊在口述內容中沒有提到，請標註「資料不足」。
+                """
+            }
+        ]
+
+        response = client.chat.completions.create(
+            model="gpt-3.5-turbo",
+            messages=messages,
+            temperature=0.7,
+            max_tokens=2000
         )
-        return response.choices[0].message['content']
+        
+        report = response.choices[0].message.content
+        print("成功生成報告:", report)
+        return report
+
     except Exception as e:
-        logger.error(f"GPT API 錯誤: {str(e)}")
-        return "無法生成報告"
+        print(f"生成報告錯誤: {str(e)}")
+        return f"無法生成報告：{str(e)}"
 
 def save_transcription_log(log_data, audio_file_path):
     """保存轉錄記錄和語音檔案"""
@@ -457,9 +478,13 @@ def upload_audio():
             text = transcribe_audio(file_path)
             logger.info("音訊轉換完成")
             
+            # 生成護理報告
+            report = generate_care_report(text)
+
             return jsonify({
                 'success': True,
-                'text': text
+                'text': text,
+                'report': report
             })
             
         finally:
@@ -484,6 +509,32 @@ def check_support():
         'success': True,
         'formats': list(ALLOWED_EXTENSIONS)
     })
+
+@app.route('/care-record/edit', methods=['POST'])
+def edit_report():
+    try:
+        data = request.json
+        original_text = data.get('text', '')
+        edited_text = data.get('edited_text', '')
+        
+        print("原始文本:", original_text)
+        print("編輯後文本:", edited_text)
+
+        # 使用編輯後的文本重新生成報告
+        report = generate_care_report(edited_text)
+
+        return jsonify({
+            'success': True,
+            'text': edited_text,
+            'report': report
+        }, ensure_ascii=False)
+
+    except Exception as e:
+        print(f"編輯報告錯誤: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': str(e)
+        })
 
 if __name__ == '__main__':
     # 在啟動時檢查 API 金鑰
