@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory
+from flask import Flask, render_template, request, jsonify, redirect, url_for, send_from_directory, Blueprint
 import os
 from datetime import datetime
 import logging
@@ -12,15 +12,17 @@ import tempfile
 from pydub import AudioSegment
 import json
 from dotenv import load_dotenv
-import openai
-import subprocess
 from openai import OpenAI
+import time
 
 # 載入 .env 檔案
 load_dotenv()
 
 # 設定日誌
-logging.basicConfig(level=logging.INFO)
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - [%(filename)s:%(lineno)d] - %(message)s'
+)
 logger = logging.getLogger(__name__)
 
 def check_api_key():
@@ -36,26 +38,45 @@ def check_api_key():
     
     return api_key
 
-def transcribe_audio(file_path):
-    """使用 OpenAI Whisper API 進行語音轉文字"""
-    try:
-        api_key = check_api_key()
-        if not api_key:
-            raise Exception("API 金鑰未設定")
+def get_openai_client():
+    """初始化 OpenAI 客戶端"""
+    api_key = os.getenv('OPENAI_API_KEY')
+    if not api_key:
+        logger.error("OpenAI API 金鑰未設定")
+        raise Exception("OpenAI API 金鑰未設定")
+    return OpenAI(api_key=api_key)
 
-        # 直接使用 API 金鑰設定
-        openai.api_key = api_key
-            
-        with open(file_path, 'rb') as audio_file:
-            response = openai.Audio.transcribe(
+def transcribe_audio(file_path):
+    """使用 OpenAI Whisper 進行語音轉文字"""
+    try:
+        logger.info(f"開始處理音訊檔案: {file_path}")
+        
+        # 取得 OpenAI 客戶端
+        client = get_openai_client()
+        
+        start_time = time.time()
+        logger.info("開始呼叫 OpenAI Whisper API")
+        
+        with open(file_path, 'rb') as audio:
+            response = client.audio.transcriptions.create(
                 model="whisper-1",
-                file=audio_file,
+                file=audio,
                 language="zh"
             )
-            return response.text
+            
+            logger.info("API 呼叫成功")
+            logger.info(f"回應類型: {type(response)}")
+            
+            # 新版 API 回應格式
+            if hasattr(response, 'text'):
+                return response.text
+            else:
+                logger.error(f"未預期的回應格式: {response}")
+                raise Exception("API 回應格式錯誤")
+                
     except Exception as e:
-        logger.error(f"語音轉文字失敗: {str(e)}")
-        raise Exception(f"語音轉文字失敗: {str(e)}")
+        logger.error(f"轉錄過程發生錯誤: {str(e)}", exc_info=True)
+        raise
 
 app = Flask(__name__)
 
@@ -90,12 +111,14 @@ app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'uploads')
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# 允許的音訊檔案格式
+# 設定允許的檔案類型
 ALLOWED_EXTENSIONS = {'wav', 'mp3', 'webm', 'm4a', 'ogg'}
 
+# 設定上傳檔案大小限制
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
+
 def allowed_file(filename):
-    return '.' in filename and \
-           filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def convert_webm_to_wav(webm_path):
     """將 WebM 音訊檔案轉換為 WAV 格式"""
@@ -195,22 +218,46 @@ def handle_error(error):
 def index():
     return render_template('index.html')
 
-def generate_report(text):
-    """使用 GPT-3.5 生成結構化報告"""
+def generate_care_report(text):
+    """使用 OpenAI 生成照護報告"""
     try:
-        response = openai.ChatCompletion.create(
+        logger.info("開始生成照護報告")
+        logger.info(f"輸入文字: {text}")
+        
+        client = get_openai_client()
+        
+        # 定義系統提示詞
+        system_prompt = """
+        你是一個專業的護理師，負責將口述內容轉換成正式的照護報告。
+        請將輸入的內容整理成以下格式：
+        
+        1. 生理狀況：
+        2. 特殊狀況：
+        3. 後續處置：
+        4. 注意事項：
+        
+        請使用專業但容易理解的用語。
+        """
+        
+        # 呼叫 GPT API
+        response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=[
-                {"role": "system", "content": "你是一個專業的護理師，負責整理和格式化交班內容。"},
-                {"role": "user", "content": f"請將以下交班內容整理成格式化的照護報告：\n{text}"}
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": text}
             ],
             temperature=0.7,
             max_tokens=1000
         )
-        return response.choices[0].message['content']
+        
+        report = response.choices[0].message.content
+        logger.info(f"生成的報告: {report}")
+        
+        return report
+        
     except Exception as e:
-        logger.error(f"生成報告失敗: {str(e)}")
-        raise Exception(f"生成報告失敗: {str(e)}")
+        logger.error(f"生成報告失敗: {str(e)}", exc_info=True)
+        raise
 
 def save_transcription_log(log_data, audio_file_path):
     """保存轉錄記錄和語音檔案"""
@@ -266,39 +313,65 @@ def save_transcription_log(log_data, audio_file_path):
         logger.error(traceback.format_exc())
         raise
 
-@app.route('/upload', methods=['POST'])
+care_record = Blueprint('care_record', __name__, url_prefix='/care-record')
+
+@care_record.route('/upload', methods=['POST'])
 def upload():
     try:
+        logger.info("=== 開始處理上傳請求 ===")
+        
         if 'audio' not in request.files:
+            logger.error("請求中沒有音訊檔案")
             return jsonify({'error': '沒有收到音訊檔案'}), 400
         
         audio_file = request.files['audio']
+        logger.info(f"收到檔案: {audio_file.filename}")
+        
         if audio_file.filename == '':
+            logger.error("檔案名稱為空")
             return jsonify({'error': '沒有選擇檔案'}), 400
             
-        # 儲存音訊檔案
-        upload_folder = os.path.join(app.root_path, 'uploads')
+        # 建立上傳目錄
+        upload_folder = os.path.join(os.getcwd(), 'uploads')
         os.makedirs(upload_folder, exist_ok=True)
         
-        file_path = os.path.join(upload_folder, 'temp_audio.wav')
+        # 儲存檔案
+        filename = secure_filename(audio_file.filename)
+        file_path = os.path.join(upload_folder, filename)
         audio_file.save(file_path)
+        logger.info("檔案儲存成功")
         
-        # 轉換音訊
-        text = transcribe_audio(file_path)
-        
-        # 清理暫存檔案
-        os.remove(file_path)
-        
-        return jsonify({
-            'success': True,
-            'text': text
-        })
+        try:
+            # 轉換音訊為文字
+            logger.info("開始轉換音訊")
+            text = transcribe_audio(file_path)
+            logger.info(f"音訊轉換完成: {text}")
+            
+            # 生成照護報告
+            logger.info("開始生成照護報告")
+            report = generate_care_report(text)
+            logger.info("照護報告生成完成")
+            
+            return jsonify({
+                'success': True,
+                'text': text,
+                'report': report
+            })
+            
+        finally:
+            # 清理暫存檔案
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                logger.info("暫存檔案已清理")
         
     except Exception as e:
-        logger.error(f"處理失敗: {str(e)}")
+        logger.error(f"處理失敗: {str(e)}", exc_info=True)
         return jsonify({
             'error': f'處理失敗: {str(e)}'
         }), 500
+
+# 在主應用程式中註冊藍圖
+app.register_blueprint(care_record)
 
 @app.route('/care-record/send_email', methods=['POST'])
 def send_email():
@@ -343,6 +416,60 @@ def check_ffmpeg_endpoint():
         return jsonify({
             'status': 'error',
             'error': str(e)
+        }), 500
+
+@app.route('/api/upload', methods=['POST'])
+def upload_audio():
+    try:
+        logger.info("=== 開始處理上傳請求 ===")
+        logger.info(f"請求內容類型: {request.content_type}")
+        logger.info(f"請求檔案數量: {len(request.files)}")
+        
+        if 'audio' not in request.files:
+            logger.error("請求中沒有音訊檔案")
+            return jsonify({'error': '沒有收到音訊檔案'}), 400
+        
+        audio_file = request.files['audio']
+        logger.info(f"收到檔案: {audio_file.filename}")
+        
+        if audio_file.filename == '':
+            logger.error("檔案名稱為空")
+            return jsonify({'error': '沒有選擇檔案'}), 400
+            
+        # 建立上傳目錄
+        upload_folder = os.path.join(app.root_path, 'uploads')
+        os.makedirs(upload_folder, exist_ok=True)
+        logger.info(f"上傳目錄: {upload_folder}")
+        
+        # 儲存檔案
+        filename = secure_filename(audio_file.filename)
+        file_path = os.path.join(upload_folder, filename)
+        logger.info(f"儲存檔案至: {file_path}")
+        
+        audio_file.save(file_path)
+        logger.info("檔案儲存成功")
+        
+        try:
+            # 轉換音訊
+            logger.info("開始轉換音訊")
+            text = transcribe_audio(file_path)
+            logger.info("音訊轉換完成")
+            
+            return jsonify({
+                'success': True,
+                'text': text
+            })
+            
+        finally:
+            # 清理暫存檔案
+            if os.path.exists(file_path):
+                os.remove(file_path)
+                logger.info("暫存檔案已清理")
+        
+    except Exception as e:
+        logger.error(f"處理失敗: {str(e)}", exc_info=True)
+        return jsonify({
+            'error': f'處理失敗: {str(e)}'
         }), 500
 
 # 設定 Flask 環境
