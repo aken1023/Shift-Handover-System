@@ -8,46 +8,64 @@ const recordingStatus = document.getElementById('recordingStatus');
 
 async function uploadAudio(blob) {
     try {
-        console.log('開始上傳音訊檔案');
-        console.log('檔案大小:', blob.size, 'bytes');
-        
         const formData = new FormData();
-        const extension = blob.type.includes('webm') ? '.webm' : '.mp4';
-        formData.append('audio', blob, 'recording' + extension);
-        
+        formData.append('audio', blob, `recording${blob.type.includes('webm') ? '.webm' : '.mp4'}`);
+
         const response = await fetch('/care-record/upload', {
             method: 'POST',
             body: formData
         });
-        
+
         if (!response.ok) {
             throw new Error(`上傳失敗 (${response.status})`);
         }
-        
+
         const data = await response.json();
-        console.log('處理結果:', data);
-        
+
         if (data.success) {
-            document.getElementById('result').textContent = `語音內容：${data.text}`;
-            
-            const reportElement = document.getElementById('care-report');
-            if (reportElement) {
-                reportElement.innerHTML = data.report.replace(/\n/g, '<br>');
-            }
-            
-            const recordingStatus = document.getElementById('recordingStatus');
-            if (recordingStatus) {
-                recordingStatus.textContent = '完成';
-            }
+            document.getElementById('result').innerHTML = `
+                <div class="care-report">
+                    <h3>語音內容：</h3>
+                    <p class="speech-content">${data.text}</p>
+                    
+                    <h3>照護評估報告：</h3>
+                    <div class="report-sections">
+                        <section>
+                            <h4>1. 病患主要診斷與生命徵象</h4>
+                            <p>${data.report.diagnosis || '無相關資訊'}</p>
+                        </section>
+                        
+                        <section>
+                            <h4>2. 重要管路與傷口評估</h4>
+                            <p>${data.report.tubes || '無相關資訊'}</p>
+                        </section>
+                        
+                        <section>
+                            <h4>3. 特殊藥物使用與治療</h4>
+                            <p>${data.report.medications || '無相關資訊'}</p>
+                        </section>
+                        
+                        <section>
+                            <h4>4. 護理重點與異常狀況</h4>
+                            <p>${data.report.nursing_focus || '無相關資訊'}</p>
+                        </section>
+                        
+                        <section>
+                            <h4>5. 後續照護計畫與注意事項</h4>
+                            <p>${data.report.care_plan || '無相關資訊'}</p>
+                        </section>
+                    </div>
+                </div>
+            `;
+            recordingStatus.textContent = '完成';
+            recordingStatus.className = 'status success';
         } else {
             throw new Error(data.error || '處理失敗');
         }
     } catch (error) {
-        console.error('上傳錯誤：', error);
-        const recordingStatus = document.getElementById('recordingStatus');
-        if (recordingStatus) {
-            recordingStatus.textContent = '處理失敗';
-        }
+        console.error('上傳錯誤:', error);
+        recordingStatus.textContent = '上傳失敗: ' + error.message;
+        recordingStatus.className = 'status error';
     }
 }
 
@@ -85,12 +103,28 @@ function checkAudioFormats() {
     return supportedFormats;
 }
 
+function updateTimer() {
+    const now = new Date();
+    const diff = now - startTime;
+    const minutes = Math.floor(diff / 60000);
+    const seconds = Math.floor((diff % 60000) / 1000);
+    
+    const timer = document.getElementById('timer');
+    if (timer) {
+        timer.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        console.log('更新時間:', timer.textContent);
+    }
+}
+
 async function startRecording() {
     try {
         console.log('開始錄音...');
         const recordingStatus = document.getElementById('recordingStatus');
+        const timer = document.getElementById('timer');
+        
         if (recordingStatus) {
             recordingStatus.textContent = '請允許使用麥克風';
+            recordingStatus.className = 'status warning';
         }
 
         const stream = await navigator.mediaDevices.getUserMedia({
@@ -132,7 +166,6 @@ async function startRecording() {
         };
 
         mediaRecorder.onstop = async () => {
-            console.log('錄音結束，準備上傳');
             const audioBlob = new Blob(audioChunks, { type: selectedMimeType });
             await uploadAudio(audioBlob);
         };
@@ -141,26 +174,29 @@ async function startRecording() {
         mediaRecorder.start();
         isRecording = true;
 
+        // 啟動計時器
+        startTime = new Date();
+        if (timerInterval) {
+            clearInterval(timerInterval);
+        }
+        timerInterval = setInterval(updateTimer, 1000);
+        updateTimer();
+
         // 更新 UI
         const recordButton = document.getElementById('recordButton');
-        const timer = document.getElementById('timer');
-        const progressBar = document.getElementById('progressBar');
-        
         if (recordButton) {
+            recordButton.textContent = '停止錄音';
             recordButton.classList.add('recording');
-            recordButton.innerHTML = '<i class="fas fa-stop fa-2x"></i>';
         }
+        
         if (recordingStatus) {
             recordingStatus.textContent = '正在錄音...';
+            recordingStatus.className = 'status warning';
         }
+        
         if (timer) {
-            timer.classList.remove('d-none');
-            startTime = new Date();
-            timerInterval = setInterval(updateTimer, 1000);
-            updateTimer();
-        }
-        if (progressBar) {
-            progressBar.classList.remove('d-none');
+            timer.style.display = 'block';
+            timer.textContent = '00:00';
         }
 
     } catch (error) {
@@ -168,25 +204,38 @@ async function startRecording() {
         const recordingStatus = document.getElementById('recordingStatus');
         if (recordingStatus) {
             recordingStatus.textContent = '錄音失敗: ' + error.message;
+            recordingStatus.className = 'status error';
         }
     }
 }
 
 async function stopRecording() {
     if (mediaRecorder && mediaRecorder.state === 'recording') {
-        console.log('停止錄音');
         mediaRecorder.stop();
         isRecording = false;
 
+        // 停止計時器
+        if (timerInterval) {
+            clearInterval(timerInterval);
+            timerInterval = null;
+        }
+
         const recordButton = document.getElementById('recordButton');
+        const timer = document.getElementById('timer');
+        
         if (recordButton) {
-            recordButton.innerHTML = '<i class="fas fa-microphone fa-2x"></i>';
+            recordButton.textContent = '開始錄音';
             recordButton.classList.remove('recording');
+        }
+
+        if (timer) {
+            timer.textContent = '00:00';
         }
 
         const recordingStatus = document.getElementById('recordingStatus');
         if (recordingStatus) {
             recordingStatus.textContent = '處理中...';
+            recordingStatus.className = 'status warning';
         }
 
         mediaRecorder.stream.getTracks().forEach(track => track.stop());
