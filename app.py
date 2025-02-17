@@ -47,28 +47,26 @@ def check_api_key():
     return api_key
 
 def init_openai():
-    """初始化 OpenAI 客戶端"""
+    """初始化 OpenAI 設定"""
     try:
         api_key = check_api_key()
         if not api_key:
             logger.error("API 金鑰未設定")
-            return None
+            return False
             
         # 設定 OpenAI API 金鑰
         openai.api_key = api_key
-        
-        # 建立客戶端
-        client = OpenAI(api_key=api_key)
-        logger.info("OpenAI 客戶端初始化成功")
-        return client
+        logger.info("OpenAI API 金鑰設定成功")
+        return True
     except Exception as e:
-        logger.error(f"OpenAI 客戶端初始化失敗: {str(e)}")
-        return None
+        logger.error(f"OpenAI 設定失敗: {str(e)}")
+        return False
 
 app = Flask(__name__)
 
-# 初始化 OpenAI 客戶端
-client = init_openai()
+# 初始化 OpenAI
+if not init_openai():
+    logger.warning("OpenAI 初始化失敗，部分功能可能無法使用")
 
 # 建立一個環形緩衝區來存儲最近的錯誤日誌
 error_logs = deque(maxlen=100)  # 保存最近100條日誌
