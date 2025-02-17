@@ -239,89 +239,48 @@
             const stopButton = document.getElementById('stopRecord');
             const statusText = document.querySelector('.status-text');
 
-            // 詳細的瀏覽器功能檢查
-            function checkBrowserSupport() {
-                console.log('開始檢查瀏覽器支援...');
-                console.log('navigator 物件:', navigator);
-                console.log('mediaDevices 物件:', navigator.mediaDevices);
-                
-                if (!navigator) {
-                    console.error('navigator 物件不存在');
-                    return false;
-                }
-                
-                if (!navigator.mediaDevices) {
-                    console.error('mediaDevices 物件不存在');
-                    console.log('嘗試建立 mediaDevices 物件');
-                    navigator.mediaDevices = {};
-                }
-                
-                if (!navigator.mediaDevices.getUserMedia) {
-                    console.error('getUserMedia 方法不存在');
-                    console.log('檢查替代方法...');
-                    
-                    const getUserMedia = 
-                        navigator.getUserMedia ||
-                        navigator.webkitGetUserMedia ||
-                        navigator.mozGetUserMedia ||
-                        navigator.msGetUserMedia;
-                    
+            // 檢查並設定 getUserMedia
+            if (navigator.mediaDevices === undefined) {
+                navigator.mediaDevices = {};
+            }
+
+            if (navigator.mediaDevices.getUserMedia === undefined) {
+                navigator.mediaDevices.getUserMedia = function(constraints) {
+                    // 首先取得舊版的 getUserMedia
+                    var getUserMedia = navigator.webkitGetUserMedia || 
+                                     navigator.mozGetUserMedia ||
+                                     navigator.msGetUserMedia;
+
+                    // 如果沒有任何版本的 getUserMedia，回傳一個 error
                     if (!getUserMedia) {
-                        console.error('找不到任何可用的 getUserMedia 方法');
-                        return false;
+                        return Promise.reject(new Error('此瀏覽器不支援 getUserMedia!'));
                     }
-                    
-                    // 為 mediaDevices.getUserMedia 建立包裝函數
-                    navigator.mediaDevices.getUserMedia = function(constraints) {
-                        return new Promise((resolve, reject) => {
-                            getUserMedia.call(navigator, constraints, resolve, reject);
-                        });
-                    }
+
+                    // 將舊版 API 轉換為 Promise
+                    return new Promise(function(resolve, reject) {
+                        getUserMedia.call(navigator, constraints, resolve, reject);
+                    });
                 }
-                
-                console.log('瀏覽器支援檢查完成');
-                return true;
             }
 
             // 初始化錄音
             async function initializeRecording() {
                 try {
-                    console.log('開始初始化錄音功能...');
-                    
-                    if (!checkBrowserSupport()) {
-                        throw new Error('瀏覽器不支援必要的錄音功能');
-                    }
-
-                    console.log('請求麥克風權限...');
-                    const stream = await navigator.mediaDevices.getUserMedia({
-                        audio: {
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            sampleRate: 44100
-                        }
+                    const stream = await navigator.mediaDevices.getUserMedia({ 
+                        audio: true,
+                        video: false
                     });
                     
-                    console.log('成功獲取音訊流:', stream);
-                    console.log('音訊軌道:', stream.getAudioTracks());
-
-                    mediaRecorder = new MediaRecorder(stream, {
-                        mimeType: 'audio/webm;codecs=opus'
-                    });
+                    mediaRecorder = new MediaRecorder(stream);
                     
-                    console.log('MediaRecorder 已建立:', mediaRecorder);
-                    console.log('支援的 MIME 類型:', MediaRecorder.isTypeSupported('audio/webm;codecs=opus'));
-
                     mediaRecorder.ondataavailable = (event) => {
-                        console.log('收到音訊數據:', event.data.size, '位元組');
                         if (event.data.size > 0) {
                             audioChunks.push(event.data);
                         }
                     };
 
                     mediaRecorder.onstop = async () => {
-                        console.log('錄音停止，準備處理音訊...');
-                        const audioBlob = new Blob(audioChunks, { type: 'audio/webm;codecs=opus' });
-                        console.log('音訊 Blob 已建立:', audioBlob.size, '位元組');
+                        const audioBlob = new Blob(audioChunks, { type: 'audio/wav' });
                         await uploadAudio(audioBlob);
                     };
 
@@ -330,47 +289,35 @@
                     console.log('錄音功能初始化成功');
                 } catch (error) {
                     console.error('錄音初始化失敗:', error);
-                    console.error('錯誤名稱:', error.name);
-                    console.error('錯誤訊息:', error.message);
-                    console.error('錯誤堆疊:', error.stack);
-                    statusText.textContent = `初始化失敗: ${error.message}`;
-                    alert(`無法初始化錄音功能: ${error.message}`);
+                    statusText.textContent = '無法初始化錄音';
+                    alert('無法初始化錄音功能: ' + error.message);
                 }
             }
 
             // 上傳音訊
             async function uploadAudio(blob) {
                 try {
-                    console.log('開始上傳音訊...');
                     statusText.textContent = '正在處理錄音...';
-                    
                     const formData = new FormData();
-                    formData.append('audio', blob, 'recording.webm');
+                    formData.append('audio', blob, 'recording.wav');
                     
-                    console.log('準備發送請求...');
                     const response = await fetch('/upload', {
                         method: 'POST',
                         body: formData
                     });
-                    
-                    console.log('收到伺服器回應:', response);
+
                     const data = await response.json();
-                    console.log('處理結果:', data);
-                    
                     document.getElementById('result').textContent = data.text || '轉錄失敗';
                     statusText.textContent = '處理完成';
                 } catch (error) {
                     console.error('上傳失敗:', error);
                     statusText.textContent = '上傳失敗';
-                    alert('上傳錄音檔案失敗: ' + error.message);
+                    alert('上傳錄音檔案失敗');
                 }
             }
 
-            // 按鈕事件處理
-            startButton.addEventListener('click', () => {
-                console.log('點擊開始按鈕');
-                console.log('MediaRecorder 狀態:', mediaRecorder?.state);
-                
+            // 開始錄音
+            startButton.onclick = () => {
                 if (mediaRecorder && mediaRecorder.state === 'inactive') {
                     audioChunks = [];
                     mediaRecorder.start();
@@ -378,30 +325,23 @@
                     stopButton.disabled = false;
                     statusText.textContent = '正在錄音...';
                     console.log('開始錄音');
-                } else {
-                    console.error('MediaRecorder 不可用或狀態不正確');
                 }
-            });
+            };
 
-            stopButton.addEventListener('click', () => {
-                console.log('點擊停止按鈕');
-                console.log('MediaRecorder 狀態:', mediaRecorder?.state);
-                
+            // 停止錄音
+            stopButton.onclick = () => {
                 if (mediaRecorder && mediaRecorder.state === 'recording') {
                     mediaRecorder.stop();
                     startButton.disabled = false;
                     stopButton.disabled = true;
-                    statusText.textContent = '錄音結束，正在處理...';
+                    statusText.textContent = '錄音結束';
                     console.log('停止錄音');
-                } else {
-                    console.error('MediaRecorder 不可用或狀態不正確');
                 }
-            });
+            };
 
             // 初始化
-            console.log('開始初始化程序...');
             initializeRecording().catch(error => {
-                console.error('初始化過程發生錯誤:', error);
+                console.error('初始化失敗:', error);
                 statusText.textContent = '初始化失敗';
             });
         });
