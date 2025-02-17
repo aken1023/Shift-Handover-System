@@ -15,17 +15,17 @@ from dotenv import load_dotenv
 import openai
 import subprocess
 
+# 載入 .env 檔案
+load_dotenv()
+
 # 設定日誌
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# 嘗試載入 .env 檔案
-load_dotenv(override=True)
-
 def get_openai_key():
     """獲取 OpenAI API 金鑰"""
-    # 直接從 Railway 環境變數獲取
-    api_key = os.environ.get('OPENAI_API_KEY')
+    # 嘗試從不同來源獲取 API 金鑰
+    api_key = os.getenv('OPENAI_API_KEY') or os.environ.get('OPENAI_API_KEY')
     
     # 調試資訊
     logger.info("開始檢查 API 金鑰")
@@ -42,23 +42,24 @@ def get_openai_key():
         else:
             logger.error("API 金鑰格式不正確 - 應該以 sk- 開頭")
     else:
-        logger.error("無法從 Railway 環境變數獲取 API 金鑰")
-        # 列出所有環境變數名稱
+        logger.error("無法從環境變數獲取 API 金鑰")
+        # 列出所有環境變數名稱（不包含值）
         env_vars = sorted(os.environ.keys())
-        logger.info(f"可用的環境變數: {', '.join(env_vars)}")
+        logger.info(f"可用的環境變數名稱: {', '.join(env_vars)}")
     
     raise ValueError("未設定 OPENAI_API_KEY 環境變數或格式不正確")
 
+app = Flask(__name__)
+
 # 設定 OpenAI API 金鑰
-import openai
 try:
     logger.info("嘗試設定 OpenAI API 金鑰")
     openai.api_key = get_openai_key()
     logger.info("OpenAI API 金鑰設定完成")
 except Exception as e:
     logger.error(f"設定 API 金鑰時發生錯誤: {str(e)}")
-    logger.error(f"錯誤類型: {type(e).__name__}")
-    raise
+    # 不要在這裡 raise，讓應用程式可以繼續運行
+    pass
 
 # 建立一個環形緩衝區來存儲最近的錯誤日誌
 error_logs = deque(maxlen=100)  # 保存最近100條日誌
@@ -83,8 +84,6 @@ logging.basicConfig(
     ]
 )
 logger = logging.getLogger(__name__)
-
-app = Flask(__name__)
 
 # 設定代理伺服器支援
 app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
