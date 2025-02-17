@@ -62,7 +62,7 @@
                                 <i class="fas fa-microphone fa-2x"></i>
                             </button>
                             <div id="recordingStatus" class="mt-2">準備就緒</div>
-                            <div id="timer" class="mt-2 display-4 d-none">00:00</div>
+                    
                         </div>
                         <div class="progress mb-3 d-none" id="progressBar">
                             <div class="progress-bar progress-bar-striped progress-bar-animated" 
