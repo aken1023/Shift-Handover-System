@@ -136,21 +136,33 @@ def convert_webm_to_wav(webm_path):
         raise
 
 def speech_to_text(audio_path):
-    """將音訊檔案轉換為文字"""
     try:
         client = get_openai_client()
         
-        with open(audio_path, "rb") as audio_file:
+        # 轉換音訊格式為 mp3（Whisper API 支援的格式）
+        audio = AudioSegment.from_file(audio_path)
+        mp3_path = audio_path.replace('.webm', '.mp3')
+        audio.export(mp3_path, format='mp3')
+        
+        # 使用 Whisper API 進行語音辨識
+        with open(mp3_path, "rb") as audio_file:
             transcript = client.audio.transcriptions.create(
                 model="whisper-1",
                 file=audio_file,
-                language="zh"
+                language="zh",
+                response_format="text",
+                temperature=0.2,  # 降低隨機性
+                prompt="這是一份護理交接班的口述內容"  # 添加上下文提示
             )
             
-        # 從 Transcription 物件中取得文字內容
-        text = transcript.text
-        print(f"語音轉文字結果: {text}")
-        return text
+        # 清理暫存檔案
+        try:
+            os.remove(mp3_path)
+        except:
+            pass
+            
+        print(f"語音轉文字結果: {transcript}")
+        return transcript
         
     except Exception as e:
         print(f"語音轉文字錯誤: {str(e)}")
