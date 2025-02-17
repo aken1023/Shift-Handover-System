@@ -112,12 +112,13 @@ UPLOAD_FOLDER = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'upload
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # 設定允許的檔案類型
-ALLOWED_EXTENSIONS = {'wav', 'mp3', 'webm', 'm4a', 'ogg'}
+ALLOWED_EXTENSIONS = {'m4a', 'mp4'}  # 只允許 MP4 相關格式
 
 # 設定上傳檔案大小限制
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
 
 def allowed_file(filename):
+    """檢查檔案類型是否允許"""
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 def convert_webm_to_wav(webm_path):
@@ -216,6 +217,7 @@ def handle_error(error):
 
 @app.route('/')
 def index():
+    """首頁路由"""
     return render_template('index.html')
 
 def generate_care_report(text):
@@ -474,6 +476,14 @@ def upload_audio():
 
 # 設定 Flask 環境
 app.config['ENV'] = os.environ.get('FLASK_ENV', 'production')
+
+@app.route('/api/check-support', methods=['GET'])
+def check_support():
+    """檢查瀏覽器支援狀態"""
+    return jsonify({
+        'success': True,
+        'formats': list(ALLOWED_EXTENSIONS)
+    })
 
 if __name__ == '__main__':
     # 在啟動時檢查 API 金鑰
