@@ -146,9 +146,9 @@ async function startRecording() {
     } catch (error) {
         console.error('錄音錯誤：', error);
         if (error.name === 'NotAllowedError') {
-            alert('無法啟動錄音功能：麥克風存取被拒絕。請在瀏覽器設定中允許使用麥克風。');
+            alert('無法啟動錄音功能2：麥克風存取被拒絕。請在瀏覽器設定中允許使用麥克風。');
         } else if (error.name === 'NotFoundError') {
-            alert('無法啟動錄音功能：找不到麥克風裝置。');
+            alert('無法啟動錄音功能3：找不到麥克風裝置。');
         } else if (error.name === 'NotSupportedError') {
             alert('您的瀏覽器不支援錄音功能，請使用最新版本的 Chrome、Firefox 或 Safari。');
         } else {

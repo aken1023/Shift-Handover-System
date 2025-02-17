@@ -113,7 +113,7 @@ async function startRecording() {
 
     } catch (error) {
         console.error('錄音錯誤：', error);
-        alert('無法啟動錄音功能：' + error.message);
+        alert('無法啟動錄音功能1：' + error.message);
         const recordingStatus = document.getElementById('recordingStatus');
         if (recordingStatus) {
             recordingStatus.textContent = '錄音功能初始化失敗';

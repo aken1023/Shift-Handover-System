@@ -151,11 +151,7 @@ def error_log():
 
 @app.route('/favicon.ico')
 def favicon():
-    return send_from_directory(
-        os.path.join(app.root_path, 'static'),
-        'favicon.ico',
-        mimetype='image/vnd.microsoft.icon'
-    )
+    return '', 204  # 返回無內容
 
 @app.errorhandler(404)
 def page_not_found(e):
