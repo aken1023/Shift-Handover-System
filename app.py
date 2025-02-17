@@ -25,48 +25,39 @@ logger = logging.getLogger(__name__)
 
 def check_api_key():
     """檢查 API 金鑰設定"""
-    # 嘗試從不同來源獲取 API 金鑰
     api_key = os.getenv('OPENAI_API_KEY') or os.environ.get('OPENAI_API_KEY')
     
-    # 輸出調試資訊
     logger.info("=== API 金鑰檢查 ===")
-    logger.info(f"os.getenv('OPENAI_API_KEY'): {os.getenv('OPENAI_API_KEY')}")
-    logger.info(f"os.environ.get('OPENAI_API_KEY'): {os.environ.get('OPENAI_API_KEY')}")
-    logger.info(f"最終 api_key: {api_key}")
+    logger.info(f"API 金鑰是否存在: {'是' if api_key else '否'}")
     
-    # 檢查 .env 檔案
-    env_path = os.path.join(os.getcwd(), '.env')
-    logger.info(f".env 檔案路徑: {env_path}")
-    logger.info(f".env 檔案是否存在: {os.path.exists(env_path)}")
-    
-    # 列出所有環境變數（僅顯示名稱）
-    logger.info("可用的環境變數:")
-    for key in sorted(os.environ.keys()):
-        logger.info(f"- {key}")
+    if api_key:
+        masked_key = api_key[:4] + '*' * (len(api_key) - 4)
+        logger.info(f"API 金鑰格式: {masked_key}")
     
     return api_key
 
-def init_openai():
-    """初始化 OpenAI 設定"""
+def transcribe_audio(file_path):
+    """使用 OpenAI Whisper API 進行語音轉文字"""
     try:
         api_key = check_api_key()
         if not api_key:
-            logger.error("API 金鑰未設定")
-            return False
-            
-        # 設定 OpenAI API 金鑰
+            raise Exception("API 金鑰未設定")
+
+        # 直接使用 API 金鑰設定
         openai.api_key = api_key
-        logger.info("OpenAI API 金鑰設定成功")
-        return True
+            
+        with open(file_path, 'rb') as audio_file:
+            response = openai.Audio.transcribe(
+                model="whisper-1",
+                file=audio_file,
+                language="zh"
+            )
+            return response.text
     except Exception as e:
-        logger.error(f"OpenAI 設定失敗: {str(e)}")
-        return False
+        logger.error(f"語音轉文字失敗: {str(e)}")
+        raise Exception(f"語音轉文字失敗: {str(e)}")
 
 app = Flask(__name__)
-
-# 初始化 OpenAI
-if not init_openai():
-    logger.warning("OpenAI 初始化失敗，部分功能可能無法使用")
 
 # 建立一個環形緩衝區來存儲最近的錯誤日誌
 error_logs = deque(maxlen=100)  # 保存最近100條日誌
@@ -204,20 +195,6 @@ def handle_error(error):
 def index():
     return render_template('index.html')
 
-def transcribe_audio(file_path):
-    """使用 OpenAI Whisper API 進行語音轉文字"""
-    try:
-        with open(file_path, 'rb') as audio_file:
-            response = openai.Audio.transcribe(
-                "whisper-1",
-                audio_file,
-                language="zh"
-            )
-        return response['text']
-    except Exception as e:
-        logger.error(f"語音轉文字失敗: {str(e)}")
-        raise Exception(f"語音轉文字失敗: {str(e)}")
-
 def generate_report(text):
     """使用 GPT-3.5 生成結構化報告"""
     try:
@@ -289,81 +266,39 @@ def save_transcription_log(log_data, audio_file_path):
         logger.error(traceback.format_exc())
         raise
 
-@app.route('/care-record/upload', methods=['POST'])
-def upload_file():
+@app.route('/upload', methods=['POST'])
+def upload():
     try:
-        logger.info("開始處理上傳請求")
-        
         if 'audio' not in request.files:
-            logger.error("沒有收到音訊檔案")
             return jsonify({'error': '沒有收到音訊檔案'}), 400
-            
-        file = request.files['audio']
-        if file.filename == '':
-            logger.error("沒有選擇檔案")
+        
+        audio_file = request.files['audio']
+        if audio_file.filename == '':
             return jsonify({'error': '沒有選擇檔案'}), 400
-
-        if not allowed_file(file.filename):
-            logger.error(f"不支援的檔案格式: {file.filename}")
-            return jsonify({'error': f'不支援的檔案格式。允許的格式: {", ".join(ALLOWED_EXTENSIONS)}'}), 400
-
-        try:
-            # 建立上傳目錄
-            upload_folder = os.path.join(os.getcwd(), 'uploads', 'audio')
-            os.makedirs(upload_folder, exist_ok=True)
             
-            # 生成檔案名稱
-            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-            original_extension = file.filename.rsplit('.', 1)[1].lower()
-            filename = secure_filename(f"audio_{timestamp}.{original_extension}")
-            filepath = os.path.join(upload_folder, filename)
-            
-            # 保存檔案
-            logger.info(f"準備保存檔案到: {filepath}")
-            file.save(filepath)
-            logger.info(f"檔案保存成功: {filepath}")
-            
-            # 檢查檔案
-            if not os.path.exists(filepath):
-                raise FileNotFoundError(f"檔案保存失敗: {filepath}")
-            
-            # 轉換音訊
-            raw_text = transcribe_audio(filepath)
-            logger.info("音訊轉換完成")
-            
-            # 使用 ChatGPT 處理
-            logger.info("開始使用 ChatGPT 處理文字")
-            formatted_report = generate_report(raw_text)
-            logger.info("AI 內容整理完成")
-
-            # 保存所有資料
-            log_data = {
-                'timestamp': timestamp,
-                'audio_file': filepath,
-                'raw_transcription': raw_text,
-                'formatted_report': formatted_report,
-                'created_at': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            }
-            
-            saved_paths = save_transcription_log(log_data, filepath)
-            logger.info("所有記錄保存完成")
-            
-            return jsonify({
-                'success': True,
-                'raw_text': raw_text,
-                'report': formatted_report,
-                'saved_paths': saved_paths
-            })
-            
-        except Exception as e:
-            logger.error(f"處理失敗: {str(e)}")
-            logger.error(traceback.format_exc())
-            return jsonify({'error': f'處理失敗: {str(e)}'}), 500
-            
+        # 儲存音訊檔案
+        upload_folder = os.path.join(app.root_path, 'uploads')
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        file_path = os.path.join(upload_folder, 'temp_audio.wav')
+        audio_file.save(file_path)
+        
+        # 轉換音訊
+        text = transcribe_audio(file_path)
+        
+        # 清理暫存檔案
+        os.remove(file_path)
+        
+        return jsonify({
+            'success': True,
+            'text': text
+        })
+        
     except Exception as e:
-        logger.error(f"系統錯誤: {str(e)}")
-        logger.error(traceback.format_exc())
-        return jsonify({'error': f'系統錯誤: {str(e)}'}), 500
+        logger.error(f"處理失敗: {str(e)}")
+        return jsonify({
+            'error': f'處理失敗: {str(e)}'
+        }), 500
 
 @app.route('/care-record/send_email', methods=['POST'])
 def send_email():
