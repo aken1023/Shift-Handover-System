@@ -25,7 +25,7 @@ load_dotenv(override=True)
 def get_openai_key():
     """獲取 OpenAI API 金鑰"""
     # 直接從環境變數獲取
-    api_key = os.environ.get('OPENAI_API_KEY')
+    api_key = os.getenv('OPENAI_API_KEY')
     
     if api_key:
         logger.info("成功從環境變數獲取 API 金鑰")
