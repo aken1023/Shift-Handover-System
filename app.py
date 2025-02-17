@@ -14,6 +14,7 @@ import json
 from dotenv import load_dotenv
 import openai
 import subprocess
+from openai import OpenAI
 
 # 載入 .env 檔案
 load_dotenv()
@@ -22,44 +23,52 @@ load_dotenv()
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-def get_openai_key():
-    """獲取 OpenAI API 金鑰"""
+def check_api_key():
+    """檢查 API 金鑰設定"""
     # 嘗試從不同來源獲取 API 金鑰
     api_key = os.getenv('OPENAI_API_KEY') or os.environ.get('OPENAI_API_KEY')
     
-    # 調試資訊
-    logger.info("開始檢查 API 金鑰")
-    logger.info(f"環境變數中是否存在 OPENAI_API_KEY: {'是' if api_key else '否'}")
+    # 輸出調試資訊
+    logger.info("=== API 金鑰檢查 ===")
+    logger.info(f"os.getenv('OPENAI_API_KEY'): {os.getenv('OPENAI_API_KEY')}")
+    logger.info(f"os.environ.get('OPENAI_API_KEY'): {os.environ.get('OPENAI_API_KEY')}")
+    logger.info(f"最終 api_key: {api_key}")
     
-    if api_key:
-        logger.info(f"API 金鑰長度: {len(api_key)}")
-        logger.info(f"API 金鑰前綴: {api_key[:4]}...")
+    # 檢查 .env 檔案
+    env_path = os.path.join(os.getcwd(), '.env')
+    logger.info(f".env 檔案路徑: {env_path}")
+    logger.info(f".env 檔案是否存在: {os.path.exists(env_path)}")
+    
+    # 列出所有環境變數（僅顯示名稱）
+    logger.info("可用的環境變數:")
+    for key in sorted(os.environ.keys()):
+        logger.info(f"- {key}")
+    
+    return api_key
+
+def init_openai():
+    """初始化 OpenAI 客戶端"""
+    try:
+        api_key = check_api_key()
+        if not api_key:
+            logger.error("API 金鑰未設定")
+            return None
+            
+        # 設定 OpenAI API 金鑰
+        openai.api_key = api_key
         
-        # 檢查金鑰格式
-        if api_key.startswith('sk-'):
-            logger.info("API 金鑰格式正確")
-            return api_key
-        else:
-            logger.error("API 金鑰格式不正確 - 應該以 sk- 開頭")
-    else:
-        logger.error("無法從環境變數獲取 API 金鑰")
-        # 列出所有環境變數名稱（不包含值）
-        env_vars = sorted(os.environ.keys())
-        logger.info(f"可用的環境變數名稱: {', '.join(env_vars)}")
-    
-    raise ValueError("未設定 OPENAI_API_KEY 環境變數或格式不正確")
+        # 建立客戶端
+        client = OpenAI(api_key=api_key)
+        logger.info("OpenAI 客戶端初始化成功")
+        return client
+    except Exception as e:
+        logger.error(f"OpenAI 客戶端初始化失敗: {str(e)}")
+        return None
 
 app = Flask(__name__)
 
-# 設定 OpenAI API 金鑰
-try:
-    logger.info("嘗試設定 OpenAI API 金鑰")
-    openai.api_key = get_openai_key()
-    logger.info("OpenAI API 金鑰設定完成")
-except Exception as e:
-    logger.error(f"設定 API 金鑰時發生錯誤: {str(e)}")
-    # 不要在這裡 raise，讓應用程式可以繼續運行
-    pass
+# 初始化 OpenAI 客戶端
+client = init_openai()
 
 # 建立一個環形緩衝區來存儲最近的錯誤日誌
 error_logs = deque(maxlen=100)  # 保存最近100條日誌
@@ -407,5 +416,9 @@ def check_ffmpeg_endpoint():
 app.config['ENV'] = os.environ.get('FLASK_ENV', 'production')
 
 if __name__ == '__main__':
+    # 在啟動時檢查 API 金鑰
+    logger.info("=== 應用程式啟動 ===")
+    check_api_key()
+    
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port) 
+    app.run(host='0.0.0.0', port=port, debug=True) 
