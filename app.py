@@ -284,7 +284,7 @@ def generate_care_report(text):
             model="gpt-3.5-turbo",
             messages=messages,
             temperature=0.7,
-            max_tokens=2000
+            max_tokens=2100
         )
         
         report = response.choices[0].message.content
