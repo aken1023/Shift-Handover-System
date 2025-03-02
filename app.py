@@ -116,7 +116,7 @@ if not os.path.exists(UPLOAD_FOLDER):
 app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 
 # 設定允許的檔案類型
-ALLOWED_EXTENSIONS = {'m4a', 'mp4'}  # 只允許 MP4 相關格式
+ALLOWED_EXTENSIONS = {'m4a', 'mp4', 'webm'}  # 增加 webm 格式支援
 
 # 設定上傳檔案大小限制
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB
@@ -132,6 +132,17 @@ def convert_webm_to_wav(webm_path):
         wav_path = webm_path.replace(".webm", ".wav")
         audio.export(wav_path, format="wav")
         return wav_path
+    except Exception as e:
+        logger.error(f"音訊轉換錯誤: {str(e)}")
+        raise
+
+def convert_to_mp4(input_path):
+    """將音訊檔案轉換為 MP4 格式"""
+    try:
+        audio = AudioSegment.from_file(input_path)
+        mp4_path = input_path.rsplit('.', 1)[0] + '.mp4'
+        audio.export(mp4_path, format='mp4')
+        return mp4_path
     except Exception as e:
         logger.error(f"音訊轉換錯誤: {str(e)}")
         raise
@@ -153,7 +164,7 @@ def speech_to_text(audio_path):
                 language="zh",
                 response_format="text",
                 temperature=0.2,  # 降低隨機性
-                prompt="這是一份護理交接班的口述內容"  # 添加上下文提示
+                prompt="這是一份護理交接班的口述內容，內容不可以無中生有"  # 添加上下文提示
             )
             
         # 清理暫存檔案
@@ -249,34 +260,26 @@ def generate_care_report(text):
         messages = [
             {
                 "role": "system", 
-                "content": "你是一位專業的護理人員，擅長整理護理交接班紀錄。"
+                "content": "你是一個專業的護理人員，擅長整理護理交接班紀錄。"
             },
             {
                 "role": "user",
                 "content": f"""
-                請根據以下的口述內容，整理成一份完整的護理交接班紀錄：
-                需要針對口述內容的內容回答，不要無中生有，數據需要嚴謹，
-                不要隨機產生，不要產生不存在的資料，不要產生無意義的資料，
-                口述內容如下：{text}
+           
+                請根據以下口述內容:{text}，整理成一份完整的護理交接班紀錄，請務必嚴謹依據口述內容回答，不得無中生有，確保數據準確，避免產生不真實或無意義的資訊。
 
-                請依照以下固定格式撰寫交接班紀錄：
+                格式要求：
+                請依照以下固定格式撰寫交接班紀錄。若下列問題在口述內容中未提及，請標註「資料不足」，而非自行補充或推測。
 
-                1. 病患主要診斷與生命徵象
-                [不要隨機產生，不要產生不存在的資料，不要產生無意義的資料,根據口述內容，整理出病患的主要診斷、目前生命徵象和整體狀況]
+                護理交接班紀錄格式：
 
-                2. 重要管路與傷口評估
-                [不要隨機產生，不要產生不存在的資料，不要產生無意義的資料,根據口述內容，說明病患目前的管路使用情況、傷口狀況等]
-
-                3. 特殊藥物使用與治療
-                [不要隨機產生，不要產生不存在的資料，不要產生無意義的資料,根據口述內容，列出重要藥物使用情況、治療計畫執行狀況]
-
-                4. 護理重點與異常狀況
-                [不要隨機產生，不要產生不存在的資料，不要產生無意義的資料,根據口述內容，說明需要特別注意的護理重點、異常狀況]
-
-                5. 後續照護計畫與注意事項
-                [不要隨機產生，不要產生不存在的資料，不要產生無意義的資料,根據口述內容，提供後續照護建議、特別注意事項]
-
-                如果某些資訊在口述內容中沒有提到，請標註「資料不足」。
+                1.病患主要診斷與生命徵象
+                2.重要管路與傷口評估
+                3.特殊藥物使用與治療
+                4.護理重點與異常狀況
+                5.後續照護計畫與注意事項
+          
+                
                 """
             }
         ]
@@ -372,34 +375,41 @@ def upload():
         upload_folder = os.path.join(os.getcwd(), 'uploads')
         os.makedirs(upload_folder, exist_ok=True)
         
-        # 儲存檔案
+        # 儲存原始檔案
         filename = secure_filename(audio_file.filename)
-        file_path = os.path.join(upload_folder, filename)
-        audio_file.save(file_path)
-        logger.info("檔案儲存成功")
+        original_path = os.path.join(upload_folder, filename)
+        audio_file.save(original_path)
+        logger.info("原始檔案儲存成功")
         
         try:
+            # 轉換為 MP4 格式並保存在 uploads 目錄
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            mp4_filename = f"record_{timestamp}.mp4"
+            mp4_path = os.path.join(upload_folder, mp4_filename)
+            audio = AudioSegment.from_file(original_path)
+            audio.export(mp4_path, format='mp4')
+            logger.info(f"檔案已轉換為 MP4 格式並保存: {mp4_path}")
+            
             # 轉換音訊為文字
-            logger.info("開始轉換音訊")
-            text = transcribe_audio(file_path)
+            text = transcribe_audio(mp4_path)
             logger.info(f"音訊轉換完成: {text}")
             
             # 生成照護報告
-            logger.info("開始生成照護報告")
             report = generate_care_report(text)
             logger.info("照護報告生成完成")
             
             return jsonify({
                 'success': True,
                 'text': text,
-                'report': report
+                'report': report,
+                'audio_path': mp4_path
             })
             
         finally:
-            # 清理暫存檔案
-            if os.path.exists(file_path):
-                os.remove(file_path)
-                logger.info("暫存檔案已清理")
+            # 只清理原始暫存檔案
+            if os.path.exists(original_path):
+                os.remove(original_path)
+                logger.info("原始暫存檔案已清理")
         
     except Exception as e:
         logger.error(f"處理失敗: {str(e)}", exc_info=True)
@@ -556,4 +566,4 @@ if __name__ == '__main__':
     check_api_key()
     
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True) 
+    app.run(host='0.0.0.0', port=port, debug=True)
