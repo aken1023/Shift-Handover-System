@@ -375,16 +375,37 @@ def upload():
         upload_folder = os.path.join(os.getcwd(), 'uploads')
         os.makedirs(upload_folder, exist_ok=True)
         
-        # 儲存原始檔案
-        filename = secure_filename(audio_file.filename)
+        # 使用時間戳生成唯一檔名
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        filename = secure_filename(f"{timestamp}_{audio_file.filename}")
         original_path = os.path.join(upload_folder, filename)
+        
+        # 確保檔案完全寫入並關閉
         audio_file.save(original_path)
+        audio_file.close()
         logger.info("原始檔案儲存成功")
         
         try:
-            # 轉換為 MP4 格式
-            mp4_path = convert_to_mp4(original_path)
-            logger.info(f"檔案已轉換為 MP4 格式: {mp4_path}")
+            # 轉換為 MP4 格式並保存
+            mp4_filename = f"{timestamp}_recording.mp4"
+            mp4_path = os.path.join(upload_folder, mp4_filename)
+            
+            # 使用 subprocess 直接調用 ffmpeg 進行轉換
+            import subprocess
+            try:
+                subprocess.run([
+                    'ffmpeg', '-i', original_path,
+                    '-acodec', 'aac',
+                    '-y',  # 覆蓋已存在的檔案
+                    mp4_path
+                ], check=True, capture_output=True)
+                logger.info(f"檔案已轉換為 MP4 格式: {mp4_path}")
+            except subprocess.CalledProcessError as e:
+                logger.error(f"FFmpeg 轉換錯誤: {e.stderr.decode()}")
+                raise
+            
+            # 等待檔案操作完成
+            time.sleep(0.5)
             
             # 轉換音訊為文字
             text = transcribe_audio(mp4_path)
@@ -397,18 +418,17 @@ def upload():
             return jsonify({
                 'success': True,
                 'text': text,
-                'report': report
+                'report': report,
+                'audio_path': mp4_path,
+                'original_path': original_path
             })
             
-        finally:
-            # 清理所有暫存檔案
-            if os.path.exists(original_path):
-                os.remove(original_path)
-                logger.info("原始檔案已清理")
-            if os.path.exists(mp4_path):
-                os.remove(mp4_path)
-                logger.info("MP4 檔案已清理")
-        
+        except Exception as e:
+            logger.error(f"處理失敗: {str(e)}", exc_info=True)
+            return jsonify({
+                'error': f'處理失敗: {str(e)}'
+            }), 500
+            
     except Exception as e:
         logger.error(f"處理失敗: {str(e)}", exc_info=True)
         return jsonify({
@@ -563,5 +583,5 @@ if __name__ == '__main__':
     logger.info("=== 應用程式啟動 ===")
     check_api_key()
     
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5100))
     app.run(host='0.0.0.0', port=port, debug=True)
