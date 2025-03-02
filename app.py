@@ -266,7 +266,7 @@ def generate_care_report(text):
                 "role": "user",
                 "content": f"""
            
-                請根據以下口述內容:{text}，整理成一份完整的護理交接班紀錄，請務必嚴謹依據口述內容回答，不得無中生有，確保數據準確，避免產生不真實或無意義的資訊。
+                請根據以下口述內容:{text}，整理成一份完整的護理交接班紀錄，請務必嚴謸依據口述內容回答，不得無中生有，確保數據準確，避免產生不真實或無意義的資訊。
 
                 格式要求：
                 請依照以下固定格式撰寫交接班紀錄。若下列問題在口述內容中未提及，請標註「資料不足」，而非自行補充或推測。
@@ -287,7 +287,7 @@ def generate_care_report(text):
         response = client.chat.completions.create(
             model="gpt-3.5-turbo",
             messages=messages,
-            temperature=0.7,
+            temperature=0.5,
             max_tokens=2100
         )
         
@@ -382,13 +382,9 @@ def upload():
         logger.info("原始檔案儲存成功")
         
         try:
-            # 轉換為 MP4 格式並保存在 uploads 目錄
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            mp4_filename = f"record_{timestamp}.mp4"
-            mp4_path = os.path.join(upload_folder, mp4_filename)
-            audio = AudioSegment.from_file(original_path)
-            audio.export(mp4_path, format='mp4')
-            logger.info(f"檔案已轉換為 MP4 格式並保存: {mp4_path}")
+            # 轉換為 MP4 格式
+            mp4_path = convert_to_mp4(original_path)
+            logger.info(f"檔案已轉換為 MP4 格式: {mp4_path}")
             
             # 轉換音訊為文字
             text = transcribe_audio(mp4_path)
@@ -401,15 +397,17 @@ def upload():
             return jsonify({
                 'success': True,
                 'text': text,
-                'report': report,
-                'audio_path': mp4_path
+                'report': report
             })
             
         finally:
-            # 只清理原始暫存檔案
+            # 清理所有暫存檔案
             if os.path.exists(original_path):
                 os.remove(original_path)
-                logger.info("原始暫存檔案已清理")
+                logger.info("原始檔案已清理")
+            if os.path.exists(mp4_path):
+                os.remove(mp4_path)
+                logger.info("MP4 檔案已清理")
         
     except Exception as e:
         logger.error(f"處理失敗: {str(e)}", exc_info=True)
