@@ -265,7 +265,7 @@ def generate_care_report(text):
             {
                 "role": "user",
                 "content": f"""
-           
+                如果口述內容:{text}與醫療照護無關，請委婉拒絕回覆，請勿生成任何內容。
                 請根據以下口述內容:{text}，整理成一份完整的護理交接班紀錄，請務必嚴謸依據口述內容回答，不得無中生有，確保數據準確，避免產生不真實或無意義的資訊。
 
                 格式要求：
@@ -355,36 +355,11 @@ def save_transcription_log(log_data, audio_file_path):
 
 care_record = Blueprint('care_record', __name__, url_prefix='/care-record')
 
-@app.route('/api/check-audio-support', methods=['GET'])
-def check_audio_support():
-    """檢查瀏覽器音訊支援狀態"""
-    return jsonify({
-        'success': True,
-        'support': {
-            'audio': True,
-            'formats': list(ALLOWED_EXTENSIONS),
-            'maxSize': app.config['MAX_CONTENT_LENGTH']
-        },
-        'requirements': {
-            'audioRecording': '需要麥克風權限',
-            'browser': '建議使用 Chrome、Firefox、Edge 等現代瀏覽器',
-            'https': '在正式環境中需要使用 HTTPS 連接'
-        }
-    })
-
 @care_record.route('/upload', methods=['POST'])
 def upload():
     try:
         logger.info("=== 開始處理上傳請求 ===")
         
-        # 檢查瀏覽器支援
-        user_agent = request.headers.get('User-Agent', '').lower()
-        if 'chrome' not in user_agent and 'firefox' not in user_agent and 'edge' not in user_agent:
-            logger.warning(f"不支援的瀏覽器: {user_agent}")
-            return jsonify({
-                'error': '請使用 Chrome、Firefox 或 Edge 瀏覽器以獲得最佳體驗'
-            }), 400
-
         if 'audio' not in request.files:
             logger.error("請求中沒有音訊檔案")
             return jsonify({'error': '沒有收到音訊檔案'}), 400
@@ -446,12 +421,21 @@ def upload():
             report = generate_care_report(text)
             logger.info("照護報告生成完成")
             
+            # 保存記錄
+            log_data = {
+                'timestamp': timestamp,
+                'raw_transcription': text,
+                'formatted_report': report
+            }
+            
+            save_paths = save_transcription_log(log_data, mp4_path)
+            
             return jsonify({
                 'success': True,
                 'text': text,
                 'report': report,
-                'audio_path': mp4_path,
-                'original_path': original_path
+                'timestamp': timestamp,
+                'paths': save_paths
             })
             
         except Exception as e:

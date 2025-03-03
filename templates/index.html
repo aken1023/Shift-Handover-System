@@ -331,7 +331,7 @@
 
             <div id="recordingStatus" class="status">準備就緒</div>
             <button id="recordButton" disabled>開始錄音</button>
-            <div class="timer" id="timer">00:00</div>
+            <!-- <div class="timer" id="timer">00:00</div> -->
         
         </div>
 
@@ -346,168 +346,179 @@
         </div>
     </div>
 
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            const recordButton = document.getElementById('recordButton');
-            const recordingStatus = document.getElementById('recordingStatus');
-            
-            let mediaRecorder;
-            let audioChunks = [];
-            let isRecording = false;
-
-            // 初始化
-            try {
-                if (!window.MediaRecorder || !navigator.mediaDevices?.getUserMedia) {
-                    throw new Error('您的瀏覽器不支援錄音功能');
-                }
+        <script>
+            document.addEventListener('DOMContentLoaded', async () => {
+                const recordButton = document.getElementById('recordButton');
+                const recordingStatus = document.getElementById('recordingStatus');
                 
-                recordButton.disabled = false;
-                recordingStatus.textContent = '準備就緒';
-                recordingStatus.className = 'status success';
-            } catch (error) {
-                console.error('初始化失敗:', error);
-                recordingStatus.textContent = '初始化失敗: ' + error.message;
-                recordingStatus.className = 'status error';
-            }
+                let mediaRecorder;
+                let audioChunks = [];
+                let isRecording = false;
 
-            // 錄音相關功能
-            async function startRecording() {
+                // 初始化
                 try {
-                    recordingStatus.textContent = '請允許使用麥克風';
-                    recordingStatus.className = 'status warning';
-
-                    const stream = await navigator.mediaDevices.getUserMedia({
-                        audio: {
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            sampleRate: 44100,
-                            channelCount: 1
-                        }
-                    });
-
-                    // 選擇支援的音訊格式
-                    const mimeTypes = [
-                        'audio/webm;codecs=opus',
-                        'audio/webm',
-                        'audio/mp4',
-                        'audio/ogg'
-                    ];
-
-                    let selectedMimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
-                    
-                    if (!selectedMimeType) {
-                        throw new Error('找不到支援的音訊格式');
+                    if (!window.MediaRecorder || !navigator.mediaDevices?.getUserMedia) {
+                        throw new Error('您的瀏覽器不支援錄音功能');
                     }
-
-                    mediaRecorder = new MediaRecorder(stream, {
-                        mimeType: selectedMimeType,
-                        audioBitsPerSecond: 128000
-                    });
-
-                    mediaRecorder.ondataavailable = (event) => {
-                        if (event.data.size > 0) {
-                            audioChunks.push(event.data);
-                        }
-                    };
-
-                    mediaRecorder.onstop = async () => {
-                        const audioBlob = new Blob(audioChunks, { type: selectedMimeType });
-                        await uploadAudio(audioBlob);
-                    };
-
-                    audioChunks = [];
-                    mediaRecorder.start();
-                    isRecording = true;
-
-                    recordButton.textContent = '停止錄音';
-                    recordButton.classList.add('recording');
-                    recordingStatus.textContent = '正在錄音...';
-                    recordingStatus.className = 'status warning';
-
+                    
+                    recordButton.disabled = false;
+                    recordingStatus.textContent = '準備就緒';
+                    recordingStatus.className = 'status success';
                 } catch (error) {
-                    console.error('錄音失敗:', error);
-                    recordingStatus.textContent = '錄音失敗: ' + error.message;
+                    console.error('初始化失敗:', error);
+                    recordingStatus.textContent = '初始化失敗: ' + error.message;
                     recordingStatus.className = 'status error';
                 }
-            }
 
-            async function stopRecording() {
-                if (mediaRecorder && mediaRecorder.state === 'recording') {
-                    mediaRecorder.stop();
-                    isRecording = false;
+                // 錄音相關功能
+                async function startRecording() {
+                    try {
+                        recordingStatus.textContent = '請允許使用麥克風';
+                        recordingStatus.className = 'status warning';
 
-                    recordButton.textContent = '開始錄音';
-                    recordButton.classList.remove('recording');
-                    recordingStatus.textContent = '處理中...';
-                    recordingStatus.className = 'status warning';
+                        const stream = await navigator.mediaDevices.getUserMedia({
+                            audio: {
+                                echoCancellation: true,
+                                noiseSuppression: true,
+                                sampleRate: 44100,
+                                channelCount: 1
+                            }
+                        });
 
-                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                        // 選擇支援的音訊格式
+                        const mimeTypes = [
+                            'audio/webm;codecs=opus',
+                            'audio/webm',
+                            'audio/mp4',
+                            'audio/ogg'
+                        ];
+
+                        let selectedMimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
+                        
+                        if (!selectedMimeType) {
+                            throw new Error('找不到支援的音訊格式');
+                        }
+
+                        mediaRecorder = new MediaRecorder(stream, {
+                            mimeType: selectedMimeType,
+                            audioBitsPerSecond: 128000
+                        });
+
+                        mediaRecorder.ondataavailable = (event) => {
+                            if (event.data.size > 0) {
+                                audioChunks.push(event.data);
+                            }
+                        };
+
+                        mediaRecorder.onstop = async () => {
+                            const audioBlob = new Blob(audioChunks, { type: selectedMimeType });
+                            await uploadAudio(audioBlob);
+                        };
+
+                        audioChunks = [];
+                        mediaRecorder.start();
+                        isRecording = true;
+
+                        recordButton.textContent = '停止錄音';
+                        recordButton.classList.add('recording');
+                        recordingStatus.textContent = '正在錄音...';
+                        recordingStatus.className = 'status warning';
+
+                    } catch (error) {
+                        console.error('錄音失敗:', error);
+                        recordingStatus.textContent = '錄音失敗: ' + error.message;
+                        recordingStatus.className = 'status error';
+                    }
                 }
-            }
 
-            async function uploadAudio(blob) {
-                try {
-                    const formData = new FormData();
-                    formData.append('audio', blob, `recording${blob.type.includes('webm') ? '.webm' : '.mp4'}`);
+                async function stopRecording() {
+                    if (mediaRecorder && mediaRecorder.state === 'recording') {
+                        mediaRecorder.stop();
+                        isRecording = false;
+
+                        recordButton.textContent = '開始錄音';
+                        recordButton.classList.remove('recording');
+                        recordingStatus.textContent = '處理中...';
+                        recordingStatus.className = 'status warning';
+
+                        mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                    }
+                }
+
+                async function uploadAudio(blob) {
+                    try {
+                        const formData = new FormData();
+                        formData.append('audio', blob, `recording${blob.type.includes('webm') ? '.webm' : '.mp4'}`);
 
                     const recordingStatus = document.getElementById('recordingStatus');
                     recordingStatus.textContent = '正在處理...';
                     recordingStatus.className = 'status warning';
-
-                    // 發送請求
-                    const response = await fetch('/care-record/upload', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`上傳失敗 (${response.status})`);
-                    }
-
-                    const data = await response.json();
+                    
+                        // 發送請求
+                        const response = await fetch('/care-record/upload', {
+                            method: 'POST',
+                            body: formData
+                        });
+                    
+                        if (!response.ok) {
+                            throw new Error(`上傳失敗 (${response.status})`);
+                        }
+                    
+                        const data = await response.json();
                     console.log('API 回應:', data); // 檢查回應數據
 
-                    if (data.success) {
-                        // 直接顯示原始回應內容進行測試
-                        const resultDiv = document.getElementById('result');
-                        resultDiv.innerHTML = `
-                            <div style="margin: 20px; padding: 20px; background: #fff; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-                                <h3>語音內容：</h3>
-                                <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px;">${data.text || '無語音內容'}</pre>
-                                
-                                <h3>照護評估報告：</h3>
-                                <pre style="background: #f5f5f5; padding: 10px; border-radius: 4px;">${data.report || '無報告內容'}</pre>
-                            </div>
-                        `;
-                        
-                        // 顯示結果容器
-                        document.getElementById('resultSection').classList.remove('hidden');
-                        
-                        // 更新狀態
-                        recordingStatus.textContent = '完成';
-                        recordingStatus.className = 'status success';
-                        
-                        // 滾動到結果區域
-                        resultDiv.scrollIntoView({ behavior: 'smooth' });
-                    } else {
-                        throw new Error(data.error || '處理失敗');
-                    }
-                } catch (error) {
-                    console.error('處理錯誤:', error);
-                    recordingStatus.textContent = '處理失敗: ' + error.message;
-                    recordingStatus.className = 'status error';
-                }
-            }
+                        if (data.success) {
+                            // 先確保元素存在
+                            const resultSection = document.getElementById('resultSection');
+                            const resultDiv = document.getElementById('result');
 
-            // 綁定按鈕事件
-            recordButton.addEventListener('click', () => {
-                if (!isRecording) {
-                    startRecording();
-                } else {
-                    stopRecording();
+                            if (!resultDiv || !resultSection) {
+                                throw new Error('找不到結果顯示區域');
+                            }
+
+                            // 更新內容
+                            resultDiv.innerHTML = `
+                                <div class="care-report">
+                                    <div class="speech-content">
+                                        <h3>語音內容：</h3>
+                                        <pre>${data.text || '無語音內容'}</pre>
+                                    </div>
+                                    
+                                    <div class="report-sections">
+                                        <h3>照護評估報告：</h3>
+                                        <pre>${data.report || '無報告內容'}</pre>
+                                    </div>
+                                </div>
+                            `;
+                            
+                            // 顯示結果區域
+                            resultSection.style.display = 'block';
+                            
+                            // 更新狀態
+                            recordingStatus.textContent = '完成';
+                            recordingStatus.className = 'status success';
+                            
+                            // 滾動到結果區域
+                            resultSection.scrollIntoView({ behavior: 'smooth' });
+                        } else {
+                            throw new Error(data.error || '處理失敗');
+                        }
+                    } catch (error) {
+                        console.error('處理錯誤:', error);
+                        recordingStatus.textContent = '處理失敗: ' + error.message;
+                        recordingStatus.className = 'status error';
+                    }
                 }
+
+                // 綁定按鈕事件
+                recordButton.addEventListener('click', () => {
+                    if (!isRecording) {
+                        startRecording();
+                    } else {
+                        stopRecording();
+                    }
+                });
             });
-        });
-    </script>
+        </script>
 </body>
-</html> 
+</html>
