@@ -355,7 +355,7 @@ function displayResult(data) {
                 </button>
             </div>
             <div class="report">
-                <h3>工廠評估報告</h3>
+                <h3>照護評估報告</h3>
                 <div class="report-content">
                     ${formatReport(data.report)}
                 </div>

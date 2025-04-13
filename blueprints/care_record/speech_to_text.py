@@ -121,13 +121,13 @@ def transcribe_with_whisper(audio_path):
         raise
 
 def generate_care_report(transcribed_text):
-    """使用 GPT 生成工廠報告"""
+    """使用 GPT 生成照護報告"""
     try:
         response = openai.ChatCompletion.create(
             model="gpt-3.5-turbo",
             messages=[
                 {"role": "system", "content": "你是一個專業的護理師，負責整理和格式化交班內容。"},
-                {"role": "user", "content": f"請將以下交班內容整理成格式化的工廠報告：\n{transcribed_text}"}
+                {"role": "user", "content": f"請將以下交班內容整理成格式化的照護報告：\n{transcribed_text}"}
             ],
             temperature=0.7,
             max_tokens=1000
@@ -156,7 +156,7 @@ def speech_to_text(audio_path):
         print(transcribed_text)
         print("-" * 50)
         
-        # 使用 OpenAI 生成工廠報告
+        # 使用 OpenAI 生成照護報告
         care_report = generate_care_report(transcribed_text)
         
         end_time = time.time()
@@ -164,7 +164,7 @@ def speech_to_text(audio_path):
         
         print("\n=== 報告生成完成 ===")
         print(f"總處理時間：{processing_time:.2f} 秒")
-        print("\n工廠報告：")
+        print("\n照護報告：")
         print("-" * 50)
         print(care_report)
         print("-" * 50)
@@ -176,14 +176,14 @@ def speech_to_text(audio_path):
         progress = ProgressAnimation("正在儲存報告")
         progress.start()
         
-        output_text_file = f"工廠報告_{timestamp}.txt"
+        output_text_file = f"照護報告_{timestamp}.txt"
         with open(output_text_file, "w", encoding="utf-8") as f:
             f.write(f"原始檔案：{audio_path}\n")
             f.write(f"處理時間：{processing_time:.2f} 秒\n")
             f.write("-" * 50 + "\n\n")
             f.write("=== 原始轉錄內容 ===\n")
             f.write(transcribed_text + "\n\n")
-            f.write("=== 整理後的工廠報告 ===\n")
+            f.write("=== 整理後的照護報告 ===\n")
             f.write(care_report)
         
         progress.stop()
@@ -205,7 +205,7 @@ def speech_to_text(audio_path):
         print("\n處理完成！")
 
 if __name__ == "__main__":
-    print("=== 語音轉文字暨工廠報告生成程式啟動 ===")
+    print("=== 語音轉文字暨照護報告生成程式啟動 ===")
     print("Python版本：", sys.version)
     print("目前工作目錄：", os.getcwd())
     

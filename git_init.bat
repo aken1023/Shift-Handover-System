@@ -23,7 +23,7 @@ git branch -M main
 
 :: 添加遠程倉庫
 echo 添加遠程倉庫...
-git remote add origin https://github.com/aken1023/MP_Shift-Transfer-System.git
+git remote add origin https://github.com/aken1023/Shift-Handover-System.git
 
 :: 推送到遠程倉庫
 echo 推送到 GitHub...

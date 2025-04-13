@@ -51,10 +51,10 @@ def upload_file():
             transcribed_text = stt.transcribe_with_whisper(filepath)
             logger.info("語音辨識完成")
             
-            # 生成工廠報告
-            logger.info("開始生成工廠報告")
+            # 生成照護報告
+            logger.info("開始生成照護報告")
             care_report = stt.generate_care_report(transcribed_text)
-            logger.info("工廠報告生成完成")
+            logger.info("照護報告生成完成")
             
             return jsonify({
                 'success': True,
@@ -86,13 +86,13 @@ def send_email():
         
         # 創建郵件內容
         email_content = f"""
-工廠交接報告
+照護交接報告
 時間：{datetime.now().strftime("%Y/%m/%d %H:%M")}
 
 交接人：{data['handoverFrom']}
 接班人：{data['handoverTo']}
 
-=== 工廠報告 ===
+=== 照護報告 ===
 {data['report']}
 """
         

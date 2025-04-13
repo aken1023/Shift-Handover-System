@@ -1,44 +1,24 @@
 @echo off
-echo ===== Git Push Script =====
+chcp 65001
+echo ===== 初始化Git倉庫並上傳到GitHub =====
 
-:: Initialize git if not already initialized
+:: 初始化git倉庫（如果尚未初始化）
 if not exist .git (
-    echo Initializing git repository...
     git init
-    git remote add origin https://github.com/aken1023/MP_Shift-Transfer-System.git
+    git remote add origin https://github.com/aken1023/Shift-Handover-System.git
 )
 
-:: Remove sensitive files from git tracking and history
-echo Removing sensitive files from tracking and history...
-git filter-branch --force --index-filter "git rm --cached --ignore-unmatch .env" --prune-empty --tag-name-filter cat -- --all
-git filter-branch --force --index-filter "git rm -r --cached --ignore-unmatch uploads/" --prune-empty --tag-name-filter cat -- --all
-git filter-branch --force --index-filter "git rm -r --cached --ignore-unmatch records/" --prune-empty --tag-name-filter cat -- --all
-git filter-branch --force --index-filter "git rm -r --cached --ignore-unmatch ssl/" --prune-empty --tag-name-filter cat -- --all
-
-:: Clean up and optimize repository
-echo Cleaning up repository...
-git for-each-ref --format='delete %(refname)' refs/original/ | git update-ref --stdin
-git reflog expire --expire=now --all
-git gc --prune=now --aggressive
-
-:: Add all files except those in .gitignore
-echo Adding files...
+:: 添加所有文件
 git add .
 
-:: Show status
-echo Current status:
-git status
+:: 提示用戶輸入commit信息
+set /p commit_msg="請輸入commit信息: "
 
-:: Get commit message
-set /p commit_msg="Enter commit message: "
-
-:: Commit changes
-echo Committing changes...
+:: 提交更改
 git commit -m "%commit_msg%"
 
-:: Force push to main branch
-echo Pushing to GitHub...
-git push -f origin main
+:: 推送到遠程倉庫
+git push -u origin main
 
-echo ===== Push Completed =====
-pause
+echo ===== 上傳完成 =====
+pause 
