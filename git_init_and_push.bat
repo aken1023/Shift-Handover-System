@@ -8,9 +8,16 @@ if not exist .git (
     git remote add origin https://github.com/aken1023/MP_Shift-Transfer-System.git
 )
 
-:: Force add all files
-echo Adding all files...
-git add -f .
+:: Remove sensitive files from git tracking
+echo Removing sensitive files from tracking...
+git rm --cached .env
+git rm --cached -r uploads/
+git rm --cached -r records/
+git rm --cached -r ssl/
+
+:: Add all files except those in .gitignore
+echo Adding files...
+git add .
 
 :: Show status
 echo Current status:
@@ -23,9 +30,9 @@ set /p commit_msg="Enter commit message: "
 echo Committing changes...
 git commit -m "%commit_msg%"
 
-:: Force push to main branch
+:: Push to main branch
 echo Pushing to GitHub...
-git push -f origin main
+git push origin main
 
 echo ===== Push Completed =====
 pause

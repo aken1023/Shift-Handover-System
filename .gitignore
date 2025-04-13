@@ -1,27 +1,52 @@
-# 環境變數和敏感資訊
+# Environment variables
 .env
-*.env
 .env.*
+
+# Python
 __pycache__/
-*.pyc
-*.pyo
-*.pyd
+*.py[cod]
+*$py.class
+*.so
 .Python
 env/
-venv/
-.venv/
-ENV/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
 
-# 上傳和日誌檔案
-uploads/
-logs/
+# Logs
 *.log
+logs/
 
-# IDE 相關
-.vscode/
+# Local development
 .idea/
+.vscode/
 *.swp
 *.swo
+
+# Database
+*.db
+*.sqlite3
+
+# Uploads and records
+uploads/
+records/
+
+# SSL certificates
+ssl/
+*.pem
+*.key
+*.crt
 
 # 系統檔案
 .DS_Store
