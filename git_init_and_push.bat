@@ -8,12 +8,18 @@ if not exist .git (
     git remote add origin https://github.com/aken1023/MP_Shift-Transfer-System.git
 )
 
-:: Remove sensitive files from git tracking
-echo Removing sensitive files from tracking...
-git rm --cached .env
-git rm --cached -r uploads/
-git rm --cached -r records/
-git rm --cached -r ssl/
+:: Remove sensitive files from git tracking and history
+echo Removing sensitive files from tracking and history...
+git filter-branch --force --index-filter "git rm --cached --ignore-unmatch .env" --prune-empty --tag-name-filter cat -- --all
+git filter-branch --force --index-filter "git rm -r --cached --ignore-unmatch uploads/" --prune-empty --tag-name-filter cat -- --all
+git filter-branch --force --index-filter "git rm -r --cached --ignore-unmatch records/" --prune-empty --tag-name-filter cat -- --all
+git filter-branch --force --index-filter "git rm -r --cached --ignore-unmatch ssl/" --prune-empty --tag-name-filter cat -- --all
+
+:: Clean up and optimize repository
+echo Cleaning up repository...
+git for-each-ref --format='delete %(refname)' refs/original/ | git update-ref --stdin
+git reflog expire --expire=now --all
+git gc --prune=now --aggressive
 
 :: Add all files except those in .gitignore
 echo Adding files...
@@ -30,9 +36,9 @@ set /p commit_msg="Enter commit message: "
 echo Committing changes...
 git commit -m "%commit_msg%"
 
-:: Push to main branch
+:: Force push to main branch
 echo Pushing to GitHub...
-git push origin main
+git push -f origin main
 
 echo ===== Push Completed =====
 pause
