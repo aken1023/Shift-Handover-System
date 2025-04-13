@@ -38,7 +38,7 @@ git remote remove origin
 
 :: Add correct remote
 echo Setting up correct repository...
-git remote add origin https://github.com/aken1023/Shift-Handover-System.git
+git remote add origin https://github.com/aken1023/MP_Shift-Transfer-System.git
 
 :: Check if git is initialized
 if not exist .git (
