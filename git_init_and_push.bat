@@ -5,7 +5,7 @@ echo ===== 初始化Git倉庫並上傳到GitHub =====
 :: 初始化git倉庫（如果尚未初始化）
 if not exist .git (
     git init
-    git remote add origin https://github.com/aken1023/Shift-Handover-System.git
+    git remote add origin https://github.com/aken1023/MP_Shift-Transfer-System.git
 )
 
 :: 添加所有文件

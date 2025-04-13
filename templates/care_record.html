@@ -2,13 +2,13 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>照護記錄系統</title>
+    <title>工廠交接班系統</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/report.css') }}">
 </head>
 <body>
     <div id="reportContainer" class="report-container">
         <div class="report-header">
-            <h1>北醫白頭翁整合照護 日夜交班記錄單</h1>
+            <h1>工廠交接班記錄單</h1>
             <div class="timestamp">2025/02/15 20:41:56</div>
         </div>
         
@@ -19,15 +19,15 @@
                     <span>114年02月15日 20:41</span>
                 </div>
                 <div class="info-item">
-                    <label>床號</label>
+                    <label>生產線</label>
                     <span>________</span>
                 </div>
                 <div class="info-item">
-                    <label>姓名</label>
+                    <label>班別</label>
                     <span>________</span>
                 </div>
                 <div class="info-item">
-                    <label>護理人員</label>
+                    <label>交接人員</label>
                     <span>未填寫</span>
                 </div>
             </div>
@@ -35,29 +35,82 @@
 
         <div class="report-sections">
             <div class="section-grid">
-                <!-- 生理評估 -->
+                <!-- 生產線狀況 -->
                 <div class="section">
-                    <h2>一、生理評估</h2>
+                    <h2>一、生產線狀況與產量</h2>
                     <div class="subsection">
-                        <h3>意識狀態</h3>
+                        <h3>生產進度</h3>
                         <div class="content">無特殊記錄</div>
                     </div>
                     <div class="subsection">
-                        <h3>生命徵象</h3>
-         
+                        <h3>產量統計</h3>
+                        <div class="content">無特殊記錄</div>
                     </div>
                 </div>
 
-                <!-- 照護評估 -->
+                <!-- 設備狀況 -->
                 <div class="section">
-                    <h2>二、照護評估</h2>
-                    <!-- 其他子區塊 -->
+                    <h2>二、設備運轉與維護狀況</h2>
+                    <div class="subsection">
+                        <h3>設備狀態</h3>
+                        <div class="content">無特殊記錄</div>
+                    </div>
+                    <div class="subsection">
+                        <h3>維護記錄</h3>
+                        <div class="content">無特殊記錄</div>
+                    </div>
                 </div>
 
-                <!-- 治療紀錄 -->
+                <!-- 物料狀況 -->
                 <div class="section">
-                    <h2>三、治療紀錄</h2>
-                    <!-- 其他子區塊 -->
+                    <h2>三、物料與庫存狀態</h2>
+                    <div class="subsection">
+                        <h3>物料使用</h3>
+                        <div class="content">無特殊記錄</div>
+                    </div>
+                    <div class="subsection">
+                        <h3>庫存狀況</h3>
+                        <div class="content">無特殊記錄</div>
+                    </div>
+                </div>
+
+                <!-- 品質管制 -->
+                <div class="section">
+                    <h2>四、品質管制與異常處理</h2>
+                    <div class="subsection">
+                        <h3>品質檢查</h3>
+                        <div class="content">無特殊記錄</div>
+                    </div>
+                    <div class="subsection">
+                        <h3>異常處理</h3>
+                        <div class="content">無特殊記錄</div>
+                    </div>
+                </div>
+
+                <!-- 安全檢查 -->
+                <div class="section">
+                    <h2>五、安全檢查與注意事項</h2>
+                    <div class="subsection">
+                        <h3>安全檢查</h3>
+                        <div class="content">無特殊記錄</div>
+                    </div>
+                    <div class="subsection">
+                        <h3>注意事項</h3>
+                        <div class="content">無特殊記錄</div>
+                    </div>
+                </div>
+
+                <!-- 待辦事項 -->
+                <div class="section">
+                    <h2>六、待辦事項與交接重點</h2>
+                    <div class="subsection">
+                        <h3>待辦事項</h3>
+                        <div class="content">無特殊記錄</div>
+                    </div>
+                    <div class="subsection">
+                        <h3>交接重點</h3>
+                        <div class="content">無特殊記錄</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -65,11 +118,11 @@
         <div class="signature-section">
             <div class="signature-grid">
                 <div class="signature-item">
-                    <label>白班護理師</label>
+                    <label>交班人員</label>
                     <div class="signature-line">_________________</div>
                 </div>
                 <div class="signature-item">
-                    <label>夜班護理師</label>
+                    <label>接班人員</label>
                     <div class="signature-line">_________________</div>
                 </div>
             </div>
@@ -79,7 +132,7 @@
             <h3>備註</h3>
             <ul>
                 <li>本紀錄由語音轉換產生，請核對內容正確性</li>
-                <li>如有任何異常狀況，請立即通報護理站</li>
+                <li>如有任何異常狀況，請立即通報主管</li>
             </ul>
         </div>
     </div>

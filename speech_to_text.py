@@ -136,17 +136,17 @@ def transcribe_with_whisper(audio_path):
         raise
 
 def generate_care_report(transcribed_text):
-    """使用 OpenAI 生成照護報告"""
+    """使用 OpenAI 生成工廠報告"""
     max_retries = 3
     retry_delay = 5  # 重試延遲時間（秒）
     
     for attempt in range(max_retries):
         try:
-            progress = ProgressAnimation("正在生成照護報告")
+            progress = ProgressAnimation("正在生成工廠報告")
             progress.start()
             
             prompt = f"""
-請根據以下的語音轉錄內容，生成一份結構完整的照護報告，並注意排版，符合html格式。
+請根據以下的語音轉錄內容，生成一份結構完整的工廠報告，並注意排版，符合html格式。
 
 報告格式要求：
 1. 基本資訊
@@ -159,8 +159,8 @@ def generate_care_report(transcribed_text):
    - 意識狀態
    - 整體狀況評估
 
-3. 照護執行紀錄
-   - 已完成的照護項目（條列式）
+3. 工廠執行紀錄
+   - 已完成的工廠項目（條列式）
    - 用藥紀錄（若有）
    - 特殊處置（若有）
    - 飲食/營養狀況
@@ -171,14 +171,14 @@ def generate_care_report(transcribed_text):
    - 行為/情緒觀察
    - 風險評估
 
-5. 後續照護建議
+5. 後續工廠建議
    - 待執行事項
    - 注意事項
    - 交班重點
    - 後續追蹤重點
 
 請使用以下格式：
-# 照護紀錄報告
+# 工廠紀錄報告
 [自動帶入現在時間]
 
 ## 一、基本資訊
@@ -187,24 +187,24 @@ def generate_care_report(transcribed_text):
 ## 二、病患狀況摘要
 [內容]
 
-## 三、照護執行紀錄
+## 三、工廠執行紀錄
 [內容]
 
 ## 四、特殊觀察重點
 [內容]
 
-## 五、後續照護建議
+## 五、後續工廠建議
 [內容]
 
 轉錄內容：
 {transcribed_text}
 
-請以專業的醫療照護報告格式輸出，使用繁體中文，確保內容清晰易讀，重點明確。如果某些資訊未在轉錄內容中提及，請標註「未提供相關資訊」。
+請以專業的醫療工廠報告格式輸出，使用繁體中文，確保內容清晰易讀，重點明確。如果某些資訊未在轉錄內容中提及，請標註「未提供相關資訊」。
 """
             response = client.chat.completions.create(
                 model="gpt-4-turbo-preview",
                 messages=[
-                    {"role": "system", "content": "你是一位專業的醫療照護報告撰寫者，擅長將口語記錄整理成結構化的照護報告。你會確保報告的專業性、完整性和可讀性。"},
+                    {"role": "system", "content": "你是一位專業的醫療工廠報告撰寫者，擅長將口語記錄整理成結構化的工廠報告。你會確保報告的專業性、完整性和可讀性。"},
                     {"role": "user", "content": prompt}
                 ],
                 temperature=0.7,
@@ -244,7 +244,7 @@ def speech_to_text(audio_path):
         print(transcribed_text)
         print("-" * 50)
         
-        # 使用 OpenAI 生成照護報告
+        # 使用 OpenAI 生成工廠報告
         care_report = generate_care_report(transcribed_text)
         
         end_time = time.time()
@@ -252,7 +252,7 @@ def speech_to_text(audio_path):
         
         print("\n=== 報告生成完成 ===")
         print(f"總處理時間：{processing_time:.2f} 秒")
-        print("\n照護報告：")
+        print("\n工廠報告：")
         print("-" * 50)
         print(care_report)
         print("-" * 50)
@@ -264,14 +264,14 @@ def speech_to_text(audio_path):
         progress = ProgressAnimation("正在儲存報告")
         progress.start()
         
-        output_text_file = f"照護報告_{timestamp}.txt"
+        output_text_file = f"工廠報告_{timestamp}.txt"
         with open(output_text_file, "w", encoding="utf-8") as f:
             f.write(f"原始檔案：{audio_path}\n")
             f.write(f"處理時間：{processing_time:.2f} 秒\n")
             f.write("-" * 50 + "\n\n")
             f.write("=== 原始轉錄內容 ===\n")
             f.write(transcribed_text + "\n\n")
-            f.write("=== 整理後的照護報告 ===\n")
+            f.write("=== 整理後的工廠報告 ===\n")
             f.write(care_report)
         
         progress.stop()
@@ -293,7 +293,7 @@ def speech_to_text(audio_path):
         print("\n處理完成！")
 
 if __name__ == "__main__":
-    print("=== 語音轉文字暨照護報告生成程式啟動 ===")
+    print("=== 語音轉文字暨工廠報告生成程式啟動 ===")
     print("Python版本：", sys.version)
     print("目前工作目錄：", os.getcwd())
     

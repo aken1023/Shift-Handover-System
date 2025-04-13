@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>照護交班系統</title>
+    <title>工廠交班系統</title>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -313,19 +313,20 @@
 </head>
 <body>
     <div class="container">
-        <h1>照護交班系統</h1>
+        <h1>工廠交班系統</h1>
         
         <div class="card">
-            <h2>語音照護記錄</h2>
+            <h2>工廠交班記錄</h2>
             
             <div class="tips">
-                <h3>照護語音紀錄重點</h3>
+                <h3>工廠交班記錄重點</h3>
                 <ul>
-                    <li>病患主要診斷與生命徵象</li>
-                    <li>重要管路與傷口評估</li>
-                    <li>特殊藥物使用與治療</li>
-                    <li>護理重點與異常狀況</li>
-                    <li>後續照護計畫與注意事項</li>
+                    <li>生產進度與數據：當前批次完成數量、運作效率、產量目標達成狀況等</li>
+                    <li>設備狀態：重點設備的運作情況、出現故障或異常情況、維修記錄與建議</li>
+                    <li>異常事件與處理措施：發生的事故、質量問題、異常現象及其處置情形</li>
+                    <li>安全與環保資訊：安全隱患、風險提示、事故報告、環保監控狀況</li>
+                    <li>待辦與交接事項：未完成的任務、需要後續跟進的事項和交接注意事項</li>
+                    <li>班組人員與工作狀態：人員變動、工時調整、特殊情況說明等</li>
                 </ul>
             </div>
 
@@ -336,13 +337,13 @@
         </div>
 
         <div class="result-section hidden" id="resultSection">
-            <h2>照護記錄結果</h2>
+            <h2>交班記錄結果</h2>
             <div id="result"></div>
         </div>
 
     
         <div class="footer">
-            © 2025 白頭翁整合照護. All rights reserved.
+            © 2025 夢工廠. All rights reserved.
         </div>
     </div>
 
@@ -485,7 +486,7 @@
                                     </div>
                                     
                                     <div class="report-sections">
-                                        <h3>照護評估報告：</h3>
+                                        <h3>工廠評估報告：</h3>
                                         <pre>${data.report || '無報告內容'}</pre>
                                     </div>
                                 </div>
