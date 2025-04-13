@@ -1,86 +1,86 @@
 @echo off
 chcp 65001 >nul
-echo ===== 初始化Git倉庫並上傳到GitHub =====
+echo ===== Git Repository Initialization and Push =====
 
-:: 檢查git是否已安裝
+:: Check if git is installed
 where git >nul 2>nul
 if %ERRORLEVEL% neq 0 (
-    echo 錯誤：未找到git，請先安裝git
+    echo Error: Git not found. Please install Git first.
     pause
     exit /b 1
 )
 
-:: 初始化git倉庫（如果尚未初始化）
+:: Initialize git repository if not exists
 if not exist .git (
-    echo 正在初始化git倉庫...
+    echo Initializing git repository...
     git init
     if %ERRORLEVEL% neq 0 (
-        echo 錯誤：初始化git倉庫失敗
+        echo Error: Failed to initialize git repository
         pause
         exit /b 1
     )
     
-    echo 正在添加遠程倉庫...
+    echo Adding remote repository...
     git remote add origin https://github.com/aken1023/MP_Shift-Transfer-System.git
     if %ERRORLEVEL% neq 0 (
-        echo 錯誤：添加遠程倉庫失敗
+        echo Error: Failed to add remote repository
         pause
         exit /b 1
     )
 )
 
-:: 檢查當前分支
+:: Check current branch
 git branch --show-current >nul 2>nul
 if %ERRORLEVEL% neq 0 (
-    echo 正在創建main分支...
+    echo Creating main branch...
     git checkout -b main
 )
 
-:: 顯示當前狀態
-echo 正在檢查文件狀態...
+:: Show current status
+echo Checking file status...
 git status
 
-:: 添加所有文件
-echo 正在添加所有文件...
+:: Add all files
+echo Adding all files...
 git add --all
 if %ERRORLEVEL% neq 0 (
-    echo 錯誤：添加文件失敗
+    echo Error: Failed to add files
     pause
     exit /b 1
 )
 
-:: 檢查是否有更改需要提交
+:: Check if there are changes to commit
 git status --porcelain | findstr /r "^[MADRCU]" >nul
 if %ERRORLEVEL% neq 0 (
-    echo 沒有需要提交的更改
+    echo No changes to commit
     pause
     exit /b 0
 )
 
-:: 顯示即將提交的文件
-echo 即將提交以下文件：
+:: Show files to be committed
+echo Files to be committed:
 git status --porcelain
 
-:: 提示用戶輸入commit信息
-set /p commit_msg="請輸入commit信息: "
+:: Prompt for commit message
+set /p commit_msg="Enter commit message: "
 
-:: 提交更改
-echo 正在提交更改...
+:: Commit changes
+echo Committing changes...
 git commit -m "%commit_msg%"
 if %ERRORLEVEL% neq 0 (
-    echo 錯誤：提交更改失敗
+    echo Error: Failed to commit changes
     pause
     exit /b 1
 )
 
-:: 推送到遠程倉庫
-echo 正在推送到GitHub...
+:: Push to remote
+echo Pushing to GitHub...
 git push -u origin main
 if %ERRORLEVEL% neq 0 (
-    echo 錯誤：推送失敗
+    echo Error: Failed to push
     pause
     exit /b 1
 )
 
-echo ===== 上傳完成 =====
+echo ===== Push Completed =====
 pause 
