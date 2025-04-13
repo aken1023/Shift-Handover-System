@@ -1,5 +1,5 @@
 @echo off
-chcp 65001
+chcp 65001 >nul
 echo ===== 初始化Git倉庫並上傳到GitHub =====
 
 :: 檢查git是否已安裝
@@ -43,6 +43,14 @@ if %ERRORLEVEL% neq 0 (
     echo 錯誤：添加文件失敗
     pause
     exit /b 1
+)
+
+:: 檢查是否有更改需要提交
+git status --porcelain | findstr /r "^[MADRCU]" >nul
+if %ERRORLEVEL% neq 0 (
+    echo 沒有需要提交的更改
+    pause
+    exit /b 0
 )
 
 :: 提示用戶輸入commit信息
