@@ -36,9 +36,13 @@ if %ERRORLEVEL% neq 0 (
     git checkout -b main
 )
 
+:: 顯示當前狀態
+echo 正在檢查文件狀態...
+git status
+
 :: 添加所有文件
-echo 正在添加文件...
-git add .
+echo 正在添加所有文件...
+git add --all
 if %ERRORLEVEL% neq 0 (
     echo 錯誤：添加文件失敗
     pause
@@ -52,6 +56,10 @@ if %ERRORLEVEL% neq 0 (
     pause
     exit /b 0
 )
+
+:: 顯示即將提交的文件
+echo 即將提交以下文件：
+git status --porcelain
 
 :: 提示用戶輸入commit信息
 set /p commit_msg="請輸入commit信息: "
