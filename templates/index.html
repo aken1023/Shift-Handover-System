@@ -309,6 +309,121 @@
         .hidden {
             display: none;
         }
+        
+        /* 多段錄音樣式 */
+        .segments-container {
+            margin: 20px 0;
+        }
+        
+        .segment-item {
+            background: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 10px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+        
+        .segment-item:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .segment-info {
+            flex: 1;
+        }
+        
+        .segment-duration {
+            color: #666;
+            font-size: 0.9rem;
+        }
+        
+        .segment-text {
+            margin-top: 5px;
+            color: #333;
+        }
+        
+        .segment-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-small {
+            padding: 5px 15px;
+            border: none;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-play {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .btn-play:hover {
+            background: #45a049;
+        }
+        
+        .btn-delete {
+            background: #f44336;
+            color: white;
+        }
+        
+        .btn-delete:hover {
+            background: #da190b;
+        }
+        
+        .recording-controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .btn-control {
+            padding: 10px 25px;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+        
+        .btn-add-segment {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .btn-add-segment:hover {
+            background: #1976D2;
+        }
+        
+        .btn-finish {
+            background: linear-gradient(45deg, var(--primary-color), var(--secondary-color));
+            color: white;
+        }
+        
+        .btn-finish:hover {
+            transform: scale(1.05);
+        }
+        
+        .btn-finish:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .segment-counter {
+            text-align: center;
+            color: #666;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body>
@@ -330,8 +445,24 @@
             </div>
 
             <div id="recordingStatus" class="status">準備就緒</div>
-            <button id="recordButton" disabled>開始錄音</button>
-            <!-- <div class="timer" id="timer">00:00</div> -->
+            
+            <!-- 多段錄音控制區 -->
+            <div class="recording-controls">
+                <button id="recordButton" class="btn-control" disabled>開始錄音</button>
+                <button id="addSegmentButton" class="btn-control btn-add-segment" style="display: none;">新增段落</button>
+                <button id="finishButton" class="btn-control btn-finish" disabled>完成所有錄音</button>
+            </div>
+            
+            <!-- 段落計數器 -->
+            <div class="segment-counter" id="segmentCounter" style="display: none;">
+                已錄製 <span id="segmentCount">0</span> 段語音
+            </div>
+            
+            <!-- 錄音段落列表 -->
+            <div class="segments-container" id="segmentsContainer" style="display: none;">
+                <h3>錄音段落</h3>
+                <div id="segmentsList"></div>
+            </div>
         
         </div>
 
@@ -349,11 +480,19 @@
         <script>
             document.addEventListener('DOMContentLoaded', async () => {
                 const recordButton = document.getElementById('recordButton');
+                const addSegmentButton = document.getElementById('addSegmentButton');
+                const finishButton = document.getElementById('finishButton');
                 const recordingStatus = document.getElementById('recordingStatus');
+                const segmentsContainer = document.getElementById('segmentsContainer');
+                const segmentsList = document.getElementById('segmentsList');
+                const segmentCounter = document.getElementById('segmentCounter');
+                const segmentCount = document.getElementById('segmentCount');
                 
                 let mediaRecorder;
                 let audioChunks = [];
                 let isRecording = false;
+                let audioSegments = []; // 儲存所有錄音段落
+                let currentSegmentStartTime = null;
 
                 // 初始化
                 try {
@@ -368,6 +507,26 @@
                     console.error('初始化失敗:', error);
                     recordingStatus.textContent = '初始化失敗: ' + error.message;
                     recordingStatus.className = 'status error';
+                }
+
+                // 更新UI狀態
+                function updateUI() {
+                    const hasSegments = audioSegments.length > 0;
+                    
+                    segmentsContainer.style.display = hasSegments ? 'block' : 'none';
+                    segmentCounter.style.display = hasSegments ? 'block' : 'none';
+                    finishButton.disabled = !hasSegments;
+                    segmentCount.textContent = audioSegments.length;
+                    
+                    if (isRecording) {
+                        recordButton.textContent = '停止錄音';
+                        recordButton.classList.add('recording');
+                        addSegmentButton.style.display = 'none';
+                    } else {
+                        recordButton.textContent = hasSegments ? '繼續錄音' : '開始錄音';
+                        recordButton.classList.remove('recording');
+                        addSegmentButton.style.display = hasSegments ? 'inline-block' : 'none';
+                    }
                 }
 
                 // 錄音相關功能
@@ -412,17 +571,32 @@
 
                         mediaRecorder.onstop = async () => {
                             const audioBlob = new Blob(audioChunks, { type: selectedMimeType });
-                            await uploadAudio(audioBlob);
+                            const duration = (Date.now() - currentSegmentStartTime) / 1000;
+                            
+                            // 儲存音訊段落
+                            audioSegments.push({
+                                blob: audioBlob,
+                                duration: duration,
+                                timestamp: new Date().toISOString(),
+                                mimeType: selectedMimeType
+                            });
+                            
+                            // 更新段落列表
+                            renderSegments();
+                            updateUI();
+                            
+                            recordingStatus.textContent = `已錄製第 ${audioSegments.length} 段`;
+                            recordingStatus.className = 'status success';
                         };
 
                         audioChunks = [];
+                        currentSegmentStartTime = Date.now();
                         mediaRecorder.start();
                         isRecording = true;
 
-                        recordButton.textContent = '停止錄音';
-                        recordButton.classList.add('recording');
                         recordingStatus.textContent = '正在錄音...';
                         recordingStatus.className = 'status warning';
+                        updateUI();
 
                     } catch (error) {
                         console.error('錄音失敗:', error);
@@ -435,27 +609,74 @@
                     if (mediaRecorder && mediaRecorder.state === 'recording') {
                         mediaRecorder.stop();
                         isRecording = false;
-
-                        recordButton.textContent = '開始錄音';
-                        recordButton.classList.remove('recording');
-                        recordingStatus.textContent = '處理中...';
-                        recordingStatus.className = 'status warning';
+                        updateUI();
 
                         mediaRecorder.stream.getTracks().forEach(track => track.stop());
                     }
                 }
 
-                async function uploadAudio(blob) {
-                    try {
-                        const formData = new FormData();
-                        formData.append('audio', blob, `recording${blob.type.includes('webm') ? '.webm' : '.mp4'}`);
-
-                    const recordingStatus = document.getElementById('recordingStatus');
-                    recordingStatus.textContent = '正在處理...';
-                    recordingStatus.className = 'status warning';
+                // 渲染段落列表
+                function renderSegments() {
+                    segmentsList.innerHTML = '';
                     
+                    audioSegments.forEach((segment, index) => {
+                        const segmentDiv = document.createElement('div');
+                        segmentDiv.className = 'segment-item';
+                        segmentDiv.innerHTML = `
+                            <div class="segment-info">
+                                <div>段落 ${index + 1}</div>
+                                <div class="segment-duration">時長: ${segment.duration.toFixed(1)} 秒</div>
+                            </div>
+                            <div class="segment-actions">
+                                <button class="btn-small btn-play" onclick="playSegment(${index})">播放</button>
+                                <button class="btn-small btn-delete" onclick="deleteSegment(${index})">刪除</button>
+                            </div>
+                        `;
+                        segmentsList.appendChild(segmentDiv);
+                    });
+                }
+
+                // 播放段落
+                window.playSegment = function(index) {
+                    const segment = audioSegments[index];
+                    const url = URL.createObjectURL(segment.blob);
+                    const audio = new Audio(url);
+                    audio.play();
+                    audio.onended = () => URL.revokeObjectURL(url);
+                };
+
+                // 刪除段落
+                window.deleteSegment = function(index) {
+                    if (confirm(`確定要刪除段落 ${index + 1} 嗎？`)) {
+                        audioSegments.splice(index, 1);
+                        renderSegments();
+                        updateUI();
+                        
+                        if (audioSegments.length === 0) {
+                            recordingStatus.textContent = '準備就緒';
+                            recordingStatus.className = 'status success';
+                        }
+                    }
+                };
+
+                // 上傳所有音訊段落
+                async function uploadAllSegments() {
+                    try {
+                        recordingStatus.textContent = '正在處理所有錄音...';
+                        recordingStatus.className = 'status warning';
+                        
+                        const formData = new FormData();
+                        
+                        // 添加所有音訊段落
+                        audioSegments.forEach((segment, index) => {
+                            const filename = `segment_${index + 1}${segment.mimeType.includes('webm') ? '.webm' : '.mp4'}`;
+                            formData.append('audio_segments', segment.blob, filename);
+                        });
+                        
+                        formData.append('segment_count', audioSegments.length);
+                        
                         // 發送請求
-                        const response = await fetch('/care-record/upload', {
+                        const response = await fetch('/care-record/upload-multi', {
                             method: 'POST',
                             body: formData
                         });
@@ -465,22 +686,17 @@
                         }
                     
                         const data = await response.json();
-                    console.log('API 回應:', data); // 檢查回應數據
+                        console.log('API 回應:', data);
 
                         if (data.success) {
-                            // 先確保元素存在
+                            // 顯示結果
                             const resultSection = document.getElementById('resultSection');
                             const resultDiv = document.getElementById('result');
 
-                            if (!resultDiv || !resultSection) {
-                                throw new Error('找不到結果顯示區域');
-                            }
-
-                            // 更新內容
                             resultDiv.innerHTML = `
                                 <div class="care-report">
                                     <div class="speech-content">
-                                        <h3>語音內容：</h3>
+                                        <h3>語音內容（${data.segment_count || audioSegments.length} 段合併）：</h3>
                                         <pre>${data.text || '無語音內容'}</pre>
                                     </div>
                                     
@@ -491,12 +707,14 @@
                                 </div>
                             `;
                             
-                            // 顯示結果區域
                             resultSection.style.display = 'block';
-                            
-                            // 更新狀態
                             recordingStatus.textContent = '完成';
                             recordingStatus.className = 'status success';
+                            
+                            // 清空段落列表
+                            audioSegments = [];
+                            renderSegments();
+                            updateUI();
                             
                             // 滾動到結果區域
                             resultSection.scrollIntoView({ behavior: 'smooth' });
@@ -516,6 +734,16 @@
                         startRecording();
                     } else {
                         stopRecording();
+                    }
+                });
+                
+                addSegmentButton.addEventListener('click', () => {
+                    alert('請點擊"繼續錄音"按鈕來新增更多段落');
+                });
+                
+                finishButton.addEventListener('click', () => {
+                    if (audioSegments.length > 0) {
+                        uploadAllSegments();
                     }
                 });
             });

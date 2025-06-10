@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>多段語音輸入測試 - 照護交班系統</title>
+    <style>
+        body {
+            font-family: 'Noto Sans TC', sans-serif;
+            padding: 20px;
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .info-box {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        
+        .controls {
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        
+        .record-btn {
+            background: #4CAF50;
+            color: white;
+        }
+        
+        .record-btn:hover {
+            background: #45a049;
+        }
+        
+        .record-btn.recording {
+            background: #f44336;
+        }
+        
+        .finish-btn {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .finish-btn:hover {
+            background: #1976D2;
+        }
+        
+        .finish-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .segments {
+            margin: 20px 0;
+        }
+        
+        .segment-item {
+            background: #f5f5f5;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .status {
+            text-align: center;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        
+        .status.success {
+            background: #c8e6c9;
+            color: #2e7d32;
+        }
+        
+        .status.error {
+            background: #ffcdd2;
+            color: #c62828;
+        }
+        
+        .status.warning {
+            background: #fff9c4;
+            color: #f57f17;
+        }
+        
+        .result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 5px;
+        }
+        
+        pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>多段語音輸入測試</h1>
+        
+        <div class="info-box">
+            <h3>使用說明：</h3>
+            <ol>
+                <li>點擊「開始錄音」錄製第一段語音</li>
+                <li>點擊「停止錄音」結束當前段落</li>
+                <li>可以繼續錄製更多段落</li>
+                <li>所有段落錄製完成後，點擊「完成所有錄音」</li>
+                <li>系統會合併所有段落並生成照護報告</li>
+            </ol>
+        </div>
+        
+        <div id="status" class="status success">準備就緒</div>
+        
+        <div class="controls">
+            <button id="recordBtn" class="record-btn">開始錄音</button>
+            <button id="finishBtn" class="finish-btn" disabled>完成所有錄音</button>
+        </div>
+        
+        <div id="segments" class="segments"></div>
+        
+        <div id="result" class="result" style="display: none;"></div>
+    </div>
+    
+    <script>
+        let mediaRecorder;
+        let audioChunks = [];
+        let audioSegments = [];
+        let isRecording = false;
+        
+        const recordBtn = document.getElementById('recordBtn');
+        const finishBtn = document.getElementById('finishBtn');
+        const status = document.getElementById('status');
+        const segmentsDiv = document.getElementById('segments');
+        const resultDiv = document.getElementById('result');
+        
+        recordBtn.addEventListener('click', toggleRecording);
+        finishBtn.addEventListener('click', uploadAllSegments);
+        
+        async function toggleRecording() {
+            if (!isRecording) {
+                await startRecording();
+            } else {
+                stopRecording();
+            }
+        }
+        
+        async function startRecording() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                
+                const mimeTypes = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4'];
+                const mimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
+                
+                mediaRecorder = new MediaRecorder(stream, { mimeType });
+                audioChunks = [];
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = () => {
+                    const blob = new Blob(audioChunks, { type: mimeType });
+                    audioSegments.push(blob);
+                    updateSegmentsList();
+                    
+                    status.textContent = `已錄製 ${audioSegments.length} 段`;
+                    status.className = 'status success';
+                    
+                    finishBtn.disabled = audioSegments.length === 0;
+                };
+                
+                mediaRecorder.start();
+                isRecording = true;
+                
+                recordBtn.textContent = '停止錄音';
+                recordBtn.classList.add('recording');
+                status.textContent = '正在錄音...';
+                status.className = 'status warning';
+                
+            } catch (error) {
+                console.error('錄音失敗:', error);
+                status.textContent = '錄音失敗: ' + error.message;
+                status.className = 'status error';
+            }
+        }
+        
+        function stopRecording() {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+                isRecording = false;
+                
+                recordBtn.textContent = '繼續錄音';
+                recordBtn.classList.remove('recording');
+            }
+        }
+        
+        function updateSegmentsList() {
+            segmentsDiv.innerHTML = '<h3>錄音段落：</h3>';
+            
+            audioSegments.forEach((segment, index) => {
+                const item = document.createElement('div');
+                item.className = 'segment-item';
+                item.innerHTML = `
+                    <span>段落 ${index + 1}</span>
+                    <button onclick="playSegment(${index})">播放</button>
+                `;
+                segmentsDiv.appendChild(item);
+            });
+        }
+        
+        function playSegment(index) {
+            const url = URL.createObjectURL(audioSegments[index]);
+            const audio = new Audio(url);
+            audio.play();
+            audio.onended = () => URL.revokeObjectURL(url);
+        }
+        
+        async function uploadAllSegments() {
+            try {
+                status.textContent = '正在處理...';
+                status.className = 'status warning';
+                
+                const formData = new FormData();
+                audioSegments.forEach((blob, index) => {
+                    formData.append('audio_segments', blob, `segment_${index + 1}.webm`);
+                });
+                formData.append('segment_count', audioSegments.length);
+                
+                const response = await fetch('/care-record/upload-multi', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    status.textContent = '處理完成！';
+                    status.className = 'status success';
+                    
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = `
+                        <h3>處理結果：</h3>
+                        <p><strong>段落數量：</strong>${data.segment_count}</p>
+                        <h4>合併後的轉錄文字：</h4>
+                        <pre>${data.text}</pre>
+                        <h4>照護報告：</h4>
+                        <pre>${data.report}</pre>
+                    `;
+                    
+                    // 清空段落
+                    audioSegments = [];
+                    updateSegmentsList();
+                    finishBtn.disabled = true;
+                    recordBtn.textContent = '開始錄音';
+                    
+                } else {
+                    throw new Error(data.error || '處理失敗');
+                }
+                
+            } catch (error) {
+                console.error('上傳失敗:', error);
+                status.textContent = '處理失敗: ' + error.message;
+                status.className = 'status error';
+            }
+        }
+    </script>
+</body>
+</html>

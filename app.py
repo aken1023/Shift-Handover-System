@@ -16,6 +16,7 @@ from dotenv import load_dotenv
 from openai import OpenAI
 import time
 import openai
+import shutil
 
 # 載入 .env 檔案
 load_dotenv()
@@ -248,6 +249,11 @@ def index():
     """首頁路由"""
     return render_template('index.html')
 
+@app.route('/test-multi-segment')
+def test_multi_segment():
+    """多段語音輸入測試頁面"""
+    return render_template('test_multi_segment.html')
+
 def generate_care_report(text):
     try:
         if not isinstance(text, str):
@@ -319,7 +325,6 @@ def save_transcription_log(log_data, audio_file_path):
         # 保存音訊檔案
         audio_extension = os.path.splitext(audio_file_path)[1]
         new_audio_path = os.path.join(record_folder, f'audio{audio_extension}')
-        import shutil
         shutil.copy2(audio_file_path, new_audio_path)
         logger.info(f"音訊檔案已保存: {new_audio_path}")
         
@@ -446,6 +451,156 @@ def upload():
             
     except Exception as e:
         logger.error(f"處理失敗: {str(e)}", exc_info=True)
+        return jsonify({
+            'error': f'處理失敗: {str(e)}'
+        }), 500
+
+@care_record.route('/upload-multi', methods=['POST'])
+def upload_multi():
+    """處理多段語音上傳"""
+    try:
+        logger.info("=== 開始處理多段語音上傳請求 ===")
+        
+        # 獲取所有音訊段落
+        audio_segments = request.files.getlist('audio_segments')
+        segment_count = request.form.get('segment_count', 0)
+        
+        logger.info(f"收到 {len(audio_segments)} 段音訊")
+        
+        if not audio_segments:
+            logger.error("請求中沒有音訊檔案")
+            return jsonify({'error': '沒有收到音訊檔案'}), 400
+            
+        # 建立上傳目錄
+        upload_folder = os.path.join(os.getcwd(), 'uploads')
+        os.makedirs(upload_folder, exist_ok=True)
+        
+        # 使用時間戳生成唯一資料夾
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        session_folder = os.path.join(upload_folder, f"multi_segment_{timestamp}")
+        os.makedirs(session_folder, exist_ok=True)
+        
+        all_transcriptions = []
+        segment_paths = []
+        
+        try:
+            # 處理每個音訊段落
+            for i, audio_file in enumerate(audio_segments):
+                logger.info(f"處理第 {i+1} 段音訊: {audio_file.filename}")
+                
+                # 儲存原始檔案
+                filename = secure_filename(f"segment_{i+1}_{audio_file.filename}")
+                original_path = os.path.join(session_folder, filename)
+                audio_file.save(original_path)
+                
+                # 轉換為 MP4 格式
+                mp4_filename = f"segment_{i+1}_converted.mp4"
+                mp4_path = os.path.join(session_folder, mp4_filename)
+                
+                import subprocess
+                try:
+                    subprocess.run([
+                        'ffmpeg', '-i', original_path,
+                        '-acodec', 'aac',
+                        '-y',
+                        mp4_path
+                    ], check=True, capture_output=True)
+                    logger.info(f"段落 {i+1} 已轉換為 MP4 格式")
+                    
+                    # 刪除原始檔案
+                    if os.path.exists(original_path):
+                        os.remove(original_path)
+                        
+                except subprocess.CalledProcessError as e:
+                    logger.error(f"FFmpeg 轉換錯誤: {e.stderr.decode()}")
+                    raise
+                
+                # 轉錄音訊
+                segment_text = transcribe_audio(mp4_path)
+                logger.info(f"段落 {i+1} 轉錄完成: {segment_text[:50]}...")
+                
+                all_transcriptions.append(f"[段落 {i+1}] {segment_text}")
+                segment_paths.append(mp4_path)
+            
+            # 合併所有轉錄文字
+            combined_text = "\n\n".join(all_transcriptions)
+            logger.info(f"所有段落轉錄完成，總長度: {len(combined_text)} 字元")
+            
+            # 生成照護報告
+            report = generate_care_report(combined_text)
+            logger.info("照護報告生成完成")
+            
+            # 保存多段記錄
+            log_data = {
+                'timestamp': timestamp,
+                'segment_count': len(audio_segments),
+                'raw_transcriptions': all_transcriptions,
+                'combined_transcription': combined_text,
+                'formatted_report': report
+            }
+            
+            # 保存到記錄目錄
+            base_folder = os.path.join(os.getcwd(), 'records')
+            os.makedirs(base_folder, exist_ok=True)
+            
+            date_folder = os.path.join(base_folder, timestamp[:8])
+            os.makedirs(date_folder, exist_ok=True)
+            
+            record_folder = os.path.join(date_folder, f"multi_{timestamp[9:]}")
+            os.makedirs(record_folder, exist_ok=True)
+            
+            # 複製所有音訊段落
+            import shutil
+            for i, segment_path in enumerate(segment_paths):
+                new_path = os.path.join(record_folder, f'segment_{i+1}.mp4')
+                shutil.copy2(segment_path, new_path)
+            
+            # 保存合併的轉錄文字
+            combined_text_path = os.path.join(record_folder, 'combined_text.txt')
+            with open(combined_text_path, 'w', encoding='utf-8') as f:
+                f.write(combined_text)
+            
+            # 保存各段落的轉錄文字
+            segments_text_path = os.path.join(record_folder, 'segments_text.json')
+            with open(segments_text_path, 'w', encoding='utf-8') as f:
+                json.dump(all_transcriptions, f, ensure_ascii=False, indent=2)
+            
+            # 保存報告
+            report_path = os.path.join(record_folder, 'report.md')
+            with open(report_path, 'w', encoding='utf-8') as f:
+                f.write(report)
+            
+            # 保存完整記錄
+            log_path = os.path.join(record_folder, 'record.json')
+            with open(log_path, 'w', encoding='utf-8') as f:
+                json.dump(log_data, f, ensure_ascii=False, indent=2)
+            
+            return jsonify({
+                'success': True,
+                'text': combined_text,
+                'report': report,
+                'timestamp': timestamp,
+                'segment_count': len(audio_segments),
+                'segments': all_transcriptions
+            })
+            
+        except Exception as e:
+            logger.error(f"多段處理失敗: {str(e)}", exc_info=True)
+            return jsonify({
+                'error': f'處理失敗: {str(e)}'
+            }), 500
+            
+        finally:
+            # 清理暫存目錄
+            try:
+                if os.path.exists(session_folder):
+                    shutil.rmtree(session_folder)
+                    logger.info("暫存目錄已清理")
+            except:
+                pass
+                
+    except Exception as e:
+        logger.error(f"多段上傳失敗: {str(e)}", exc_info=True)
         return jsonify({
             'error': f'處理失敗: {str(e)}'
         }), 500
