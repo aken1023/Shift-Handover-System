@@ -1,39 +1,67 @@
+/* 蘋果風格報告樣式 */
+:root {
+    --primary-color: #007AFF;
+    --text-primary: #000000;
+    --text-secondary: #3C3C43;
+    --text-tertiary: #8E8E93;
+    --background-color: #F5F5F7;
+    --card-background: #FFFFFF;
+    --border-color: #E5E5EA;
+    --shadow-subtle: 0 2px 15px rgba(0, 0, 0, 0.05);
+    --shadow-medium: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Noto Sans TC', 'Segoe UI', system-ui, sans-serif;
+    background-color: var(--background-color);
+    color: var(--text-primary);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
 .report-container {
     max-width: 1200px;
     margin: 2rem auto;
-    padding: 2rem;
-    background: white;
-    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-    border-radius: 12px;
+    padding: 2.5rem;
+    background: var(--card-background);
+    box-shadow: var(--shadow-subtle);
+    border-radius: 20px;
+    border: 1px solid var(--border-color);
 }
 
 .report-header {
     text-align: center;
-    margin-bottom: 2rem;
+    margin-bottom: 3rem;
 }
 
 .report-header h1 {
-    color: #2c3e50;
-    font-size: 1.8rem;
-    margin-bottom: 0.5rem;
+    color: var(--text-primary);
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.03em;
 }
 
 .timestamp {
-    color: #7f8c8d;
-    font-size: 0.9rem;
+    color: var(--text-tertiary);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    letter-spacing: -0.01em;
 }
 
 .basic-info {
-    margin-bottom: 2rem;
+    margin-bottom: 2.5rem;
 }
 
 .info-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-    gap: 1rem;
-    padding: 1rem;
-    background: #f8f9fa;
-    border-radius: 8px;
+    gap: 1.25rem;
+    padding: 1.5rem;
+    background: var(--background-color);
+    border-radius: 16px;
+    border: 0.5px solid var(--border-color);
 }
 
 .info-item {
@@ -43,38 +71,65 @@
 }
 
 .info-item label {
-    color: #7f8c8d;
-    font-size: 0.9rem;
+    color: var(--text-tertiary);
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.info-item span {
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-weight: 500;
 }
 
 .section-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-    gap: 2rem;
+    gap: 1.5rem;
 }
 
 .section {
-    background: #fff;
-    border: 1px solid #eee;
-    border-radius: 8px;
-    padding: 1.5rem;
+    background: var(--card-background);
+    border: 0.5px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.75rem;
+    transition: all 0.2s ease-in-out;
+}
+
+.section:hover {
+    box-shadow: var(--shadow-medium);
+    transform: translateY(-2px);
 }
 
 .section h2 {
-    color: #2c3e50;
-    border-bottom: 2px solid #eee;
-    padding-bottom: 0.5rem;
-    margin-bottom: 1rem;
+    color: var(--text-primary);
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    letter-spacing: -0.02em;
 }
 
 .subsection {
     margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--background-color);
+    border-radius: 12px;
 }
 
 .subsection h3 {
-    color: #34495e;
-    margin-bottom: 0.5rem;
-    font-size: 1.1rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.75rem;
+    font-size: 1rem;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+}
+
+.content {
+    color: var(--text-secondary);
+    font-size: 0.9375rem;
+    line-height: 1.6;
 }
 
 .content ul {
@@ -83,14 +138,18 @@
 }
 
 .content li {
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #eee;
+    padding: 0.75rem 0;
+    border-bottom: 0.5px solid var(--border-color);
+}
+
+.content li:last-child {
+    border-bottom: none;
 }
 
 .signature-section {
-    margin-top: 2rem;
-    padding-top: 2rem;
-    border-top: 2px solid #eee;
+    margin-top: 3rem;
+    padding-top: 2.5rem;
+    border-top: 0.5px solid var(--border-color);
 }
 
 .signature-grid {
@@ -106,18 +165,33 @@
     gap: 1rem;
 }
 
+.signature-item label {
+    color: var(--text-secondary);
+    font-weight: 500;
+    font-size: 0.9375rem;
+}
+
 .signature-line {
     width: 100%;
     text-align: center;
-    border-bottom: 1px solid #000;
+    border-bottom: 1px solid var(--text-tertiary);
     padding: 1rem 0;
+    min-width: 200px;
 }
 
 .notes-section {
     margin-top: 2rem;
-    padding: 1rem;
-    background: #f8f9fa;
-    border-radius: 8px;
+    padding: 1.5rem;
+    background: rgba(0, 122, 255, 0.05);
+    border-radius: 16px;
+    border: 0.5px solid rgba(0, 122, 255, 0.2);
+}
+
+.notes-section h3 {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    font-size: 1rem;
 }
 
 .notes-section ul {
@@ -127,27 +201,64 @@
 
 .notes-section li {
     padding: 0.5rem 0;
-    color: #666;
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    position: relative;
+    padding-left: 1.5rem;
+}
+
+.notes-section li:before {
+    content: "•";
+    position: absolute;
+    left: 0;
+    color: var(--primary-color);
+    font-weight: bold;
 }
 
 @media print {
+    body {
+        background: white;
+    }
+    
     .report-container {
         margin: 0;
         padding: 1rem;
         box-shadow: none;
+        border: none;
     }
     
     .section-grid {
         grid-template-columns: 1fr;
+    }
+    
+    .section:hover {
+        box-shadow: none;
+        transform: none;
     }
 }
 
 @media (max-width: 768px) {
+    .report-container {
+        margin: 1rem;
+        padding: 1.5rem;
+        border-radius: 16px;
+    }
+    
+    .report-header h1 {
+        font-size: 1.5rem;
+    }
+    
     .section-grid {
         grid-template-columns: 1fr;
+        gap: 1rem;
     }
     
     .info-grid {
         grid-template-columns: 1fr;
+    }
+    
+    .signature-grid {
+        grid-template-columns: 1fr;
+        gap: 1.5rem;
     }
 } 

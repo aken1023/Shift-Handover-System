@@ -3,294 +3,337 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>錄音功能測試</title>
+    <title>Apple Style UI 展示</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
+        .demo-section {
+            margin: 3rem 0;
         }
-        .status {
-            margin: 10px 0;
-            padding: 10px;
-            border-radius: 4px;
+
+        .demo-section h2 {
+            color: var(--text-primary);
+            font-size: 2rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            letter-spacing: -0.03em;
         }
-        .success {
-            background-color: #d4edda;
-            color: #155724;
+
+        .demo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
         }
-        .error {
-            background-color: #f8d7da;
-            color: #721c24;
+
+        .demo-card {
+            background: var(--card-background);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: var(--shadow-subtle);
+            border: 0.5px solid var(--border-color);
+            transition: all 0.2s ease-in-out;
         }
-        .warning {
-            background-color: #fff3cd;
-            color: #856404;
+
+        .demo-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
         }
-        #recordButton {
-            padding: 10px 20px;
-            font-size: 16px;
-            border: none;
-            border-radius: 4px;
-            background-color: #007bff;
+
+        .button-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin: 1rem 0;
+        }
+
+        .btn-secondary {
+            background: var(--secondary-color);
             color: white;
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .btn-warning {
+            background: var(--warning-color);
+            color: white;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: white;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+        }
+
+        .btn-outline:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .notification {
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            margin: 0.5rem 0;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .notification.info {
+            background: rgba(0, 122, 255, 0.1);
+            color: var(--primary-color);
+            border: 0.5px solid rgba(0, 122, 255, 0.2);
+        }
+
+        .notification.success {
+            background: rgba(52, 199, 89, 0.1);
+            color: var(--success-color);
+            border: 0.5px solid rgba(52, 199, 89, 0.2);
+        }
+
+        .notification.warning {
+            background: rgba(255, 149, 0, 0.1);
+            color: var(--warning-color);
+            border: 0.5px solid rgba(255, 149, 0, 0.2);
+        }
+
+        .notification.danger {
+            background: rgba(255, 59, 48, 0.1);
+            color: var(--danger-color);
+            border: 0.5px solid rgba(255, 59, 48, 0.2);
+        }
+
+        .input-group {
+            margin: 1rem 0;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.875rem;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 30px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
             cursor: pointer;
-            margin: 10px 0;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border-color);
+            transition: .3s;
+            border-radius: 30px;
         }
-        #recordButton:disabled {
-            background-color: #ccc;
-            cursor: not-allowed;
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 24px;
+            width: 24px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
         }
-        #recordButton.recording {
-            background-color: #dc3545;
+
+        input:checked + .toggle-slider {
+            background-color: var(--success-color);
         }
-        #debugInfo {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 4px;
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
         }
-        .test-section {
-            margin: 20px 0;
-            padding: 15px;
-            border: 1px solid #ddd;
-            border-radius: 4px;
+
+        .glass-demo {
+            background: rgba(255, 255, 255, 0.72);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 0.5px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            margin: 1rem 0;
+        }
+
+        .color-palette {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin: 1rem 0;
+        }
+
+        .color-swatch {
+            width: 80px;
+            height: 80px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 0.75rem;
+            box-shadow: var(--shadow-subtle);
+        }
+
+        .navbar-demo {
+            background: var(--blur-background);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 0.5px solid var(--border-color);
+            padding: 1rem 2rem;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 1rem 0;
         }
     </style>
 </head>
 <body>
-    <h1>錄音功能測試頁面</h1>
-    
-    <div class="test-section">
-        <h2>瀏覽器相容性檢查</h2>
-        <div id="compatibilityStatus"></div>
+    <div class="container">
+        <h1 style="text-align: center; margin: 3rem 0;">Apple Style UI 設計展示</h1>
+
+        <!-- 顏色展示 -->
+        <div class="demo-section">
+            <h2>色彩系統</h2>
+            <div class="color-palette">
+                <div class="color-swatch" style="background: var(--primary-color);">Primary</div>
+                <div class="color-swatch" style="background: var(--secondary-color);">Secondary</div>
+                <div class="color-swatch" style="background: var(--success-color);">Success</div>
+                <div class="color-swatch" style="background: var(--warning-color);">Warning</div>
+                <div class="color-swatch" style="background: var(--danger-color);">Danger</div>
+                <div class="color-swatch" style="background: var(--text-primary); color: white;">Text</div>
+            </div>
+        </div>
+
+        <!-- 按鈕展示 -->
+        <div class="demo-section">
+            <h2>按鈕元件</h2>
+            <div class="button-group">
+                <button class="btn btn-primary">主要按鈕</button>
+                <button class="btn btn-secondary">次要按鈕</button>
+                <button class="btn btn-success">成功按鈕</button>
+                <button class="btn btn-warning">警告按鈕</button>
+                <button class="btn btn-danger">危險按鈕</button>
+                <button class="btn btn-outline">外框按鈕</button>
+            </div>
+        </div>
+
+        <!-- 卡片展示 -->
+        <div class="demo-section">
+            <h2>卡片元件</h2>
+            <div class="demo-grid">
+                <div class="demo-card">
+                    <h3>標準卡片</h3>
+                    <p style="color: var(--text-secondary); line-height: 1.6;">
+                        這是一個標準的卡片元件，使用細微的陰影和圓角設計，hover 時會有輕微的抬升效果。
+                    </p>
+                </div>
+                <div class="glass-demo">
+                    <h3>毛玻璃效果</h3>
+                    <p style="color: var(--text-secondary); line-height: 1.6;">
+                        這是一個使用毛玻璃效果的卡片，透明背景配合 backdrop-filter 創造出優雅的視覺效果。
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- 通知展示 -->
+        <div class="demo-section">
+            <h2>通知元件</h2>
+            <div class="notification info">
+                <span>ℹ️</span>
+                <span>這是一個資訊通知</span>
+            </div>
+            <div class="notification success">
+                <span>✅</span>
+                <span>操作成功完成</span>
+            </div>
+            <div class="notification warning">
+                <span>⚠️</span>
+                <span>請注意這個警告訊息</span>
+            </div>
+            <div class="notification danger">
+                <span>❌</span>
+                <span>發生錯誤，請稍後再試</span>
+            </div>
+        </div>
+
+        <!-- 表單元件 -->
+        <div class="demo-section">
+            <h2>表單元件</h2>
+            <div class="demo-grid">
+                <div class="demo-card">
+                    <div class="input-group">
+                        <label>文字輸入</label>
+                        <input type="text" class="form-control" placeholder="請輸入文字">
+                    </div>
+                    <div class="input-group">
+                        <label>下拉選單</label>
+                        <select class="form-control">
+                            <option>選項一</option>
+                            <option>選項二</option>
+                            <option>選項三</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="demo-card">
+                    <div class="input-group">
+                        <label>切換開關</label>
+                        <label class="toggle-switch">
+                            <input type="checkbox" checked>
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                    <div class="input-group">
+                        <label>文字區域</label>
+                        <textarea class="form-control" rows="3" placeholder="請輸入多行文字"></textarea>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 導航欄展示 -->
+        <div class="demo-section">
+            <h2>導航欄</h2>
+            <div class="navbar-demo">
+                <div style="font-weight: 600; font-size: 1.125rem;">照護交班系統</div>
+                <div style="display: flex; gap: 2rem;">
+                    <a href="#" style="text-decoration: none; color: var(--text-secondary);">首頁</a>
+                    <a href="#" style="text-decoration: none; color: var(--text-secondary);">記錄</a>
+                    <a href="#" style="text-decoration: none; color: var(--text-secondary);">報告</a>
+                    <a href="#" style="text-decoration: none; color: var(--text-secondary);">設定</a>
+                </div>
+            </div>
+        </div>
+
+        <div class="footer">
+            © 2025 Apple Style UI Design Demo
+        </div>
     </div>
-
-    <div class="test-section">
-        <h2>音訊格式支援</h2>
-        <div id="formatSupport"></div>
-    </div>
-
-    <div class="test-section">
-        <h2>錄音測試</h2>
-        <button id="recordButton" disabled>
-            <span>開始錄音</span>
-        </button>
-        <div id="recordingStatus" class="status">準備中...</div>
-    </div>
-
-    <div class="test-section">
-        <h2>錄音結果</h2>
-        <div id="result"></div>
-    </div>
-
-    <div class="test-section">
-        <h2>調試資訊</h2>
-        <div id="debugInfo"></div>
-    </div>
-
-    <script>
-        document.addEventListener('DOMContentLoaded', async () => {
-            const compatibilityStatus = document.getElementById('compatibilityStatus');
-            const formatSupport = document.getElementById('formatSupport');
-            const recordButton = document.getElementById('recordButton');
-            const recordingStatus = document.getElementById('recordingStatus');
-            const debugInfo = document.getElementById('debugInfo');
-            
-            let mediaRecorder;
-            let audioChunks = [];
-            let isRecording = false;
-
-            // 檢查瀏覽器支援
-            function checkCompatibility() {
-                const checks = {
-                    'MediaRecorder API': !!window.MediaRecorder,
-                    'getUserMedia': !!navigator.mediaDevices?.getUserMedia,
-                    'Blob': !!window.Blob,
-                    'FormData': !!window.FormData,
-                    'Fetch API': !!window.fetch
-                };
-
-                let html = '<ul>';
-                for (const [feature, supported] of Object.entries(checks)) {
-                    html += `<li>${feature}: <span class="${supported ? 'success' : 'error'}">${supported ? '支援' : '不支援'}</span></li>`;
-                }
-                html += '</ul>';
-                
-                compatibilityStatus.innerHTML = html;
-                return Object.values(checks).every(v => v);
-            }
-
-            // 檢查音訊格式支援
-            function checkAudioFormats() {
-                const mimeTypes = [
-                    'audio/webm',
-                    'audio/webm;codecs=opus',
-                    'audio/mp4',
-                    'audio/mp4;codecs=mp4a',
-                    'audio/ogg',
-                    'audio/ogg;codecs=opus'
-                ];
-
-                let html = '<ul>';
-                for (const type of mimeTypes) {
-                    const supported = MediaRecorder.isTypeSupported(type);
-                    html += `<li>${type}: <span class="${supported ? 'success' : 'error'}">${supported ? '支援' : '不支援'}</span></li>`;
-                }
-                html += '</ul>';
-                
-                formatSupport.innerHTML = html;
-            }
-
-            // 初始化
-            try {
-                const isCompatible = checkCompatibility();
-                if (isCompatible) {
-                    checkAudioFormats();
-                    recordButton.disabled = false;
-                    recordingStatus.textContent = '準備就緒';
-                    recordingStatus.className = 'status success';
-                } else {
-                    recordingStatus.textContent = '您的瀏覽器不支援所需功能';
-                    recordingStatus.className = 'status error';
-                }
-            } catch (error) {
-                console.error('初始化失敗:', error);
-                recordingStatus.textContent = '初始化失敗: ' + error.message;
-                recordingStatus.className = 'status error';
-            }
-
-            // 錄音相關功能
-            async function startRecording() {
-                try {
-                    debugInfo.innerHTML += '<p>開始錄音...</p>';
-                    recordingStatus.textContent = '請允許使用麥克風';
-                    recordingStatus.className = 'status warning';
-
-                    const stream = await navigator.mediaDevices.getUserMedia({
-                        audio: {
-                            echoCancellation: true,
-                            noiseSuppression: true,
-                            sampleRate: 44100,
-                            channelCount: 1
-                        }
-                    });
-
-                    debugInfo.innerHTML += '<p>已取得麥克風權限</p>';
-
-                    // 選擇支援的音訊格式
-                    const mimeTypes = [
-                        'audio/webm;codecs=opus',
-                        'audio/webm',
-                        'audio/mp4',
-                        'audio/ogg'
-                    ];
-
-                    let selectedMimeType = mimeTypes.find(type => MediaRecorder.isTypeSupported(type));
-                    
-                    if (!selectedMimeType) {
-                        throw new Error('找不到支援的音訊格式');
-                    }
-
-                    debugInfo.innerHTML += `<p>使用音訊格式: ${selectedMimeType}</p>`;
-
-                    mediaRecorder = new MediaRecorder(stream, {
-                        mimeType: selectedMimeType,
-                        audioBitsPerSecond: 128000
-                    });
-
-                    mediaRecorder.ondataavailable = (event) => {
-                        if (event.data.size > 0) {
-                            audioChunks.push(event.data);
-                        }
-                    };
-
-                    mediaRecorder.onstop = async () => {
-                        debugInfo.innerHTML += '<p>錄音結束，準備上傳</p>';
-                        const audioBlob = new Blob(audioChunks, { type: selectedMimeType });
-                        await uploadAudio(audioBlob);
-                    };
-
-                    audioChunks = [];
-                    mediaRecorder.start();
-                    isRecording = true;
-
-                    recordButton.textContent = '停止錄音';
-                    recordButton.classList.add('recording');
-                    recordingStatus.textContent = '正在錄音...';
-                    recordingStatus.className = 'status warning';
-
-                } catch (error) {
-                    console.error('錄音失敗:', error);
-                    debugInfo.innerHTML += `<p class="error">錄音失敗: ${error.message}</p>`;
-                    recordingStatus.textContent = '錄音失敗: ' + error.message;
-                    recordingStatus.className = 'status error';
-                }
-            }
-
-            async function stopRecording() {
-                if (mediaRecorder && mediaRecorder.state === 'recording') {
-                    debugInfo.innerHTML += '<p>停止錄音</p>';
-                    mediaRecorder.stop();
-                    isRecording = false;
-
-                    recordButton.textContent = '開始錄音';
-                    recordButton.classList.remove('recording');
-                    recordingStatus.textContent = '處理中...';
-                    recordingStatus.className = 'status warning';
-
-                    mediaRecorder.stream.getTracks().forEach(track => track.stop());
-                }
-            }
-
-            async function uploadAudio(blob) {
-                try {
-                    debugInfo.innerHTML += `<p>開始上傳 (${blob.size} bytes)</p>`;
-                    const formData = new FormData();
-                    formData.append('audio', blob, `recording${blob.type.includes('webm') ? '.webm' : '.mp4'}`);
-
-                    const response = await fetch('/care-record/upload', {
-                        method: 'POST',
-                        body: formData
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`上傳失敗 (${response.status})`);
-                    }
-
-                    const data = await response.json();
-                    debugInfo.innerHTML += '<p>上傳成功</p>';
-
-                    if (data.success) {
-                        document.getElementById('result').innerHTML = `
-                            <h3>語音內容：</h3>
-                            <p>${data.text}</p>
-                            <h3>照護報告：</h3>
-                            <p>${data.report.replace(/\n/g, '<br>')}</p>
-                        `;
-                        recordingStatus.textContent = '完成';
-                        recordingStatus.className = 'status success';
-                    } else {
-                        throw new Error(data.error || '處理失敗');
-                    }
-                } catch (error) {
-                    console.error('上傳錯誤:', error);
-                    debugInfo.innerHTML += `<p class="error">上傳失敗: ${error.message}</p>`;
-                    recordingStatus.textContent = '上傳失敗: ' + error.message;
-                    recordingStatus.className = 'status error';
-                }
-            }
-
-            // 綁定按鈕事件
-            recordButton.addEventListener('click', () => {
-                if (!isRecording) {
-                    startRecording();
-                } else {
-                    stopRecording();
-                }
-            });
-        });
-    </script>
 </body>
 </html> 
