@@ -2,67 +2,174 @@
 <html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>錯誤日誌</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f5f5f5;
+        :root {
+            --primary-color: #007AFF;
+            --danger-color: #FF3B30;
+            --warning-color: #FF9500;
+            --success-color: #34C759;
+            --background-color: #F5F5F7;
+            --card-background: #FFFFFF;
+            --text-primary: #000000;
+            --text-secondary: #3C3C43;
+            --text-tertiary: #8E8E93;
+            --border-color: #E5E5EA;
+            --shadow-subtle: 0 2px 15px rgba(0, 0, 0, 0.05);
+            --shadow-medium: 0 4px 20px rgba(0, 0, 0, 0.08);
         }
+
+        * {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Noto Sans TC', 'Segoe UI', system-ui, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: var(--background-color);
+            color: var(--text-primary);
+            line-height: 1.5;
+            font-size: 17px;
+            letter-spacing: -0.022em;
+        }
+
         .log-container {
             max-width: 1200px;
             margin: 0 auto;
         }
+
+        h1 {
+            color: var(--text-primary);
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 2rem;
+            letter-spacing: -0.03em;
+        }
+
         .log-entry {
-            background-color: white;
-            border-radius: 5px;
-            padding: 15px;
-            margin-bottom: 10px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            background-color: var(--card-background);
+            border-radius: 16px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: var(--shadow-subtle);
+            border: 1px solid var(--border-color);
+            transition: all 0.2s ease-in-out;
         }
+
+        .log-entry:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
         .log-entry.error {
-            border-left: 4px solid #dc3545;
+            border-left: 3px solid var(--danger-color);
+            background-color: rgba(255, 59, 48, 0.02);
         }
+
         .timestamp {
-            color: #666;
-            font-size: 0.9em;
+            color: var(--text-tertiary);
+            font-size: 0.875rem;
+            font-weight: 500;
+            letter-spacing: -0.01em;
         }
+
         .level {
             display: inline-block;
-            padding: 2px 8px;
-            border-radius: 3px;
-            margin: 0 10px;
-            font-size: 0.8em;
+            padding: 0.25rem 0.75rem;
+            border-radius: 6px;
+            margin: 0 0.75rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
         }
+
         .level.ERROR {
-            background-color: #dc3545;
-            color: white;
+            background-color: rgba(255, 59, 48, 0.1);
+            color: var(--danger-color);
         }
+
+        .level.WARNING {
+            background-color: rgba(255, 149, 0, 0.1);
+            color: var(--warning-color);
+        }
+
+        .level.INFO {
+            background-color: rgba(0, 122, 255, 0.1);
+            color: var(--primary-color);
+        }
+
         .message {
-            margin: 10px 0;
-            font-size: 1.1em;
+            margin: 1rem 0;
+            font-size: 1rem;
+            color: var(--text-primary);
+            line-height: 1.6;
         }
+
         .traceback {
-            background-color: #f8f9fa;
-            padding: 10px;
-            border-radius: 3px;
-            font-family: monospace;
+            background-color: var(--background-color);
+            padding: 1rem;
+            border-radius: 12px;
+            font-family: 'SF Mono', Monaco, 'Courier New', monospace;
+            font-size: 0.8125rem;
             white-space: pre-wrap;
-            margin-top: 10px;
+            margin-top: 1rem;
+            color: var(--text-secondary);
+            border: 0.5px solid var(--border-color);
+            overflow-x: auto;
         }
+
         .refresh-button {
             position: fixed;
-            bottom: 20px;
-            right: 20px;
-            padding: 10px 20px;
-            background-color: #007bff;
+            bottom: 2rem;
+            right: 2rem;
+            padding: 0.75rem 1.5rem;
+            background-color: var(--primary-color);
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 12px;
+            font-size: 0.9375rem;
+            font-weight: 600;
             cursor: pointer;
+            box-shadow: var(--shadow-medium);
+            transition: all 0.2s ease-in-out;
+            letter-spacing: -0.01em;
         }
+
         .refresh-button:hover {
-            background-color: #0056b3;
+            background-color: #0051D5;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-medium);
+        }
+
+        .refresh-button:active {
+            transform: translateY(0);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+                font-size: 16px;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .log-entry {
+                padding: 1.25rem;
+                border-radius: 12px;
+            }
+
+            .refresh-button {
+                bottom: 1.5rem;
+                right: 1.5rem;
+                padding: 0.625rem 1.25rem;
+                font-size: 0.875rem;
+            }
         }
     </style>
 </head>

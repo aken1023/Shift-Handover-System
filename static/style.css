@@ -1,77 +1,126 @@
-/* 全局樣式 */
+/* 蘋果風格全局樣式 */
 :root {
-    --primary-color: #f8b195;
-    --secondary-color: #f67280;
-    --accent-color: #c06c84;
-    --background-color: #fff5f5;
-    --text-color: #4a4a4a;
-    --card-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --primary-color: #007AFF;
+    --secondary-color: #5856D6;
+    --success-color: #34C759;
+    --warning-color: #FF9500;
+    --danger-color: #FF3B30;
+    --background-color: #F2F2F7;
+    --card-background: #FFFFFF;
+    --text-primary: #000000;
+    --text-secondary: #3C3C43;
+    --text-tertiary: #8E8E93;
+    --border-color: #E5E5EA;
+    --shadow-subtle: 0 2px 8px rgba(0, 0, 0, 0.04);
+    --shadow-medium: 0 4px 16px rgba(0, 0, 0, 0.08);
+    --shadow-large: 0 8px 32px rgba(0, 0, 0, 0.12);
+    --blur-background: rgba(255, 255, 255, 0.72);
+}
+
+* {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 body {
     background-color: var(--background-color);
-    color: var(--text-color);
-    font-family: 'Microsoft JhengHei', '微軟正黑體', sans-serif;
-    line-height: 1.6;
+    color: var(--text-primary);
+    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Segoe UI', system-ui, sans-serif;
+    line-height: 1.5;
+    font-size: 17px;
+    letter-spacing: -0.022em;
 }
 
-/* 導航欄樣式 */
+/* 導航欄樣式 - 毛玻璃效果 */
 .navbar {
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color)) !important;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    background: var(--blur-background) !important;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 0.5px solid var(--border-color);
+    box-shadow: none;
+    padding: 0.5rem 0;
 }
 
 .navbar-brand {
-    font-size: 1.4rem;
-    font-weight: bold;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    letter-spacing: -0.01em;
 }
 
-/* 卡片樣式 */
+/* 卡片樣式 - 簡潔設計 */
 .card {
     border: none;
-    border-radius: 15px;
-    box-shadow: var(--card-shadow);
-    transition: transform 0.3s ease;
-    background: white;
-    margin-bottom: 20px;
+    border-radius: 16px;
+    box-shadow: var(--shadow-subtle);
+    transition: all 0.2s ease-in-out;
+    background: var(--card-background);
+    margin-bottom: 24px;
+    overflow: hidden;
 }
 
 .card:hover {
-    transform: translateY(-5px);
+    box-shadow: var(--shadow-medium);
+    transform: translateY(-2px);
 }
 
 .card-title {
-    color: var(--accent-color);
-    font-weight: bold;
-    margin-bottom: 1.5rem;
+    color: var(--text-primary);
+    font-weight: 600;
+    margin-bottom: 1rem;
+    font-size: 1.25rem;
+    letter-spacing: -0.02em;
 }
 
-/* 錄音按鈕樣式 */
+/* 錄音按鈕樣式 - iOS 風格 */
 #recordButton {
-    width: 80px;
-    height: 80px;
+    width: 72px;
+    height: 72px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    background: var(--primary-color);
     border: none;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
-    transition: all 0.3s ease;
+    box-shadow: var(--shadow-medium);
+    transition: all 0.2s ease-in-out;
+    position: relative;
+    overflow: hidden;
+}
+
+#recordButton::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: radial-gradient(circle at center, transparent 30%, rgba(255, 255, 255, 0.1) 70%);
+    opacity: 0;
+    transition: opacity 0.3s;
 }
 
 #recordButton:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-large);
+}
+
+#recordButton:hover::before {
+    opacity: 1;
+}
+
+#recordButton:active {
+    transform: scale(0.95);
 }
 
 #recordButton.recording {
-    animation: pulse 1.5s infinite;
-    background: linear-gradient(135deg, #ff6b6b, #ff4757);
+    background: var(--danger-color);
+    animation: recordPulse 1.5s ease-in-out infinite;
 }
 
 /* 錄音提示樣式 */
 .guide-title {
-    color: var(--accent-color);
-    font-weight: bold;
+    color: var(--text-primary);
+    font-weight: 600;
     margin-bottom: 1rem;
+    font-size: 1.125rem;
 }
 
 .guide-list {
@@ -80,122 +129,199 @@ body {
 }
 
 .guide-list li {
-    margin-bottom: 0.8rem;
-    padding: 0.5rem;
-    background-color: rgba(248, 177, 149, 0.1);
-    border-radius: 8px;
-    transition: all 0.3s ease;
+    margin-bottom: 0.75rem;
+    padding: 1rem;
+    background-color: var(--background-color);
+    border-radius: 12px;
+    transition: all 0.15s ease-in-out;
+    position: relative;
+    padding-left: 2.5rem;
+}
+
+.guide-list li::before {
+    content: '•';
+    position: absolute;
+    left: 1rem;
+    color: var(--primary-color);
+    font-weight: bold;
 }
 
 .guide-list li:hover {
-    background-color: rgba(248, 177, 149, 0.2);
-    transform: translateX(5px);
+    background-color: rgba(0, 122, 255, 0.05);
+    transform: translateX(4px);
 }
 
 /* 表單元素樣式 */
 .form-control {
     border-radius: 10px;
-    border: 2px solid #eee;
-    padding: 0.8rem;
-    transition: all 0.3s ease;
+    border: 1px solid var(--border-color);
+    padding: 0.75rem 1rem;
+    transition: all 0.15s ease-in-out;
+    background-color: var(--card-background);
+    font-size: 17px;
+    line-height: 1.4;
 }
 
 .form-control:focus {
     border-color: var(--primary-color);
-    box-shadow: 0 0 0 0.2rem rgba(248, 177, 149, 0.25);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.1);
+    outline: none;
 }
 
 /* 按鈕樣式 */
 .btn {
     border-radius: 10px;
-    padding: 0.5rem 1.5rem;
-    transition: all 0.3s ease;
-}
-
-.btn-primary {
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    padding: 0.625rem 1.25rem;
+    transition: all 0.15s ease-in-out;
+    font-weight: 500;
+    font-size: 17px;
+    letter-spacing: -0.022em;
     border: none;
 }
 
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
 .btn-primary:hover {
-    background: linear-gradient(135deg, var(--secondary-color), var(--accent-color));
-    transform: translateY(-2px);
+    background: #0051D5;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-medium);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
 }
 
 /* 報告區域樣式 */
 #reportResult {
-    border-radius: 15px;
-    background-color: white;
+    border-radius: 16px;
+    background-color: var(--card-background);
     padding: 1.5rem;
+    box-shadow: var(--shadow-subtle);
 }
 
 .report-timestamp {
-    color: var(--accent-color);
-    font-size: 0.9rem;
+    color: var(--text-tertiary);
+    font-size: 0.875rem;
+    font-weight: 500;
 }
 
 /* 響應式設計 */
 @media (max-width: 768px) {
+    body {
+        font-size: 16px;
+    }
+    
     .container {
         padding: 1rem;
     }
     
     .card {
         margin-bottom: 1rem;
+        border-radius: 12px;
     }
     
     #recordButton {
-        width: 60px;
-        height: 60px;
+        width: 64px;
+        height: 64px;
     }
     
     .navbar-brand {
-        font-size: 1.2rem;
+        font-size: 1.0625rem;
     }
 }
 
 /* 動畫效果 */
-@keyframes pulse {
+@keyframes recordPulse {
     0% {
-        box-shadow: 0 0 0 0 rgba(255, 107, 107, 0.4);
+        box-shadow: 0 0 0 0 rgba(255, 59, 48, 0.4);
     }
     70% {
-        box-shadow: 0 0 0 20px rgba(255, 107, 107, 0);
+        box-shadow: 0 0 0 16px rgba(255, 59, 48, 0);
     }
     100% {
-        box-shadow: 0 0 0 0 rgba(255, 107, 107, 0);
+        box-shadow: 0 0 0 0 rgba(255, 59, 48, 0);
     }
 }
 
 /* 時間顯示樣式 */
 #currentTime {
-    font-size: 1.1rem;
+    font-size: 1rem;
     font-weight: 500;
     padding: 0.5rem 1rem;
-    background-color: rgba(255, 255, 255, 0.2);
+    background-color: var(--blur-background);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
     border-radius: 8px;
+    border: 0.5px solid var(--border-color);
+    color: var(--text-secondary);
 }
 
 /* 進度條樣式 */
 .progress {
-    height: 10px;
-    border-radius: 5px;
-    background-color: rgba(248, 177, 149, 0.2);
+    height: 6px;
+    border-radius: 3px;
+    background-color: var(--border-color);
+    overflow: hidden;
 }
 
 .progress-bar {
-    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    background: var(--primary-color);
+    transition: width 0.3s ease;
 }
 
 /* 處理狀態樣式 */
 #processingStatus {
     border: none;
-    background-color: rgba(248, 177, 149, 0.1);
-    border-radius: 10px;
+    background-color: var(--background-color);
+    border-radius: 12px;
+    padding: 1rem;
+    font-weight: 500;
 }
 
 /* 計時器樣式 */
 #timer {
-    color: var(--accent-color);
-    font-weight: bold;
+    color: var(--text-secondary);
+    font-weight: 600;
+    font-feature-settings: 'tnum';
+    font-variant-numeric: tabular-nums;
+}
+
+/* 毛玻璃效果容器 */
+.glass-container {
+    background: var(--blur-background);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 0.5px solid var(--border-color);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow-subtle);
+}
+
+/* 狀態指示器 */
+.status-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.375rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+.status-indicator.success {
+    background-color: rgba(52, 199, 89, 0.1);
+    color: var(--success-color);
+}
+
+.status-indicator.warning {
+    background-color: rgba(255, 149, 0, 0.1);
+    color: var(--warning-color);
+}
+
+.status-indicator.danger {
+    background-color: rgba(255, 59, 48, 0.1);
+    color: var(--danger-color);
 } 
